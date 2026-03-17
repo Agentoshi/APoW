@@ -10,14 +10,8 @@
 * [Difficulty Adjustment](protocol/difficulty-adjustment.md)
 * [Mining Rigs](protocol/mining-rigs.md)
 * [Mint Pricing](protocol/mint-pricing.md)
+* [Agent Identity](protocol/agent-identity.md)
 * [Liquidity](protocol/liquidity.md)
-
-## Agent Identity
-
-* [ERC-8004 Overview](agent-identity/overview.md)
-* [Agent URI](agent-identity/agent-uri.md)
-* [Metadata](agent-identity/metadata.md)
-* [Wallet Binding](agent-identity/wallet-binding.md)
 
 ## Technical Reference
 

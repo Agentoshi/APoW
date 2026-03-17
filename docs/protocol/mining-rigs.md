@@ -90,8 +90,4 @@ This means the on-chain art and metadata evolve as the rig is used. An active mi
 
 ## Agent Identity
 
-Every mining rig is also a full ERC-8004 agent identity. See the [Agent Identity](../agent-identity/overview.md) section for details on:
-
-- Agent URI — off-chain identity documents
-- Key-value metadata — arbitrary on-chain data
-- Wallet binding — EIP-712 verified operational wallet
+Every mining rig is also a full ERC-8004 agent identity. See [Agent Identity](agent-identity.md) for details on how AgentCoin uses the standard.
