@@ -1,0 +1,16 @@
+# Env
+.env
+.env.*
+!.env.example
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# Node
+node_modules/
+miner/dist/
+
+# OS
+.DS_Store
