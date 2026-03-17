@@ -5,12 +5,12 @@ Bitcoin-style proof-of-work protocol built for AI agents on Base. Agents mine $A
 ## Architecture
 
 ```
-MiningAgent (ERC-721 + ERC-8004)   AgentCoin (ERC-20)        LPVault
-    NFT mining rigs / agent IDs  ──>  $AGENT token mining   <──  LP accumulation
+MiningAgent (ERC-8004)             AgentCoin (ERC-20)        LPVault
+    Mining rigs / agent IDs    ──>  $AGENT token mining   <──  LP accumulation
     10k supply                        21M supply                 Uniswap V3 + UNCX
 ```
 
-**MiningAgent** — ERC-721 NFTs that act as mining rigs and on-chain AI agent identities ([ERC-8004: Trustless Agents](https://eips.ethereum.org/EIPS/eip-8004)). Each has a rarity tier and hashpower multiplier that determines mining reward output. Minting requires solving an SMHL (String-Match Hash Lock) challenge within 20 seconds — a puzzle designed to be trivial for AI agents and difficult for bots. Mint fees flow to LPVault to bootstrap protocol-owned liquidity. Every minted NFT is also an agent identity with `agentURI`, key-value metadata, and EIP-712-verified wallet binding that clears on transfer.
+**MiningAgent** — [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent identities that double as mining rigs. Each has a rarity tier and hashpower multiplier that determines mining reward output. Minting requires solving an SMHL (String-Match Hash Lock) challenge within 20 seconds — a puzzle designed to be trivial for AI agents and difficult for bots. Mint fees flow to LPVault to bootstrap protocol-owned liquidity. Every minted agent has an `agentURI`, key-value metadata, and EIP-712-verified wallet binding that clears on transfer.
 
 **AgentCoin** — The mineable token following [ERC-918](https://eips.ethereum.org/EIPS/eip-918) (Mineable Token) concepts. Agents submit dual proof: an SMHL solution demonstrating language capability + a SHA-3 nonce producing a hash below the current difficulty target. Miners must own a MiningAgent NFT to mine. One mine per Base block. Difficulty auto-adjusts every 64 mines, targeting 1 mine per 5 blocks (~10s). Rewards decay 10% every 500,000 mines across eras, mirroring Bitcoin's halving schedule.
 
@@ -77,7 +77,7 @@ After all setters are called, deployer should `renounceOwnership()` on all three
 contracts/
   src/
     AgentCoin.sol          ERC-20 + PoAW mining
-    MiningAgent.sol        ERC-721 mining rig NFTs + ERC-8004 agent identity
+    MiningAgent.sol        ERC-8004 mining rig agent identities
     LPVault.sol            LP accumulation + Uniswap V3 + UNCX eternal lock
     interfaces/            IAgentCoin, IMiningAgent
     lib/MinerArt.sol       On-chain generative pixel art
@@ -119,8 +119,7 @@ Base (Coinbase L2). Solidity 0.8.26, Cancun EVM, compiled with `via_ir` + 200 op
 
 ## Standards
 
-- [ERC-721](https://eips.ethereum.org/EIPS/eip-721) — Non-Fungible Token (mining rigs)
-- [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) — Trustless Agents (agent identity, URI, metadata, wallet binding)
+- [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) — Trustless Agents (mining rigs as agent identities with URI, metadata, wallet binding)
 - [ERC-918](https://eips.ethereum.org/EIPS/eip-918) — Mineable Token (SHA-3 PoW with adaptive difficulty)
 - [EIP-712](https://eips.ethereum.org/EIPS/eip-712) — Typed Structured Data Hashing (agent wallet verification)
 - [ERC-5267](https://eips.ethereum.org/EIPS/eip-5267) — EIP-712 Domain Retrieval

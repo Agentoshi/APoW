@@ -4,7 +4,7 @@
 
 Mineable ERC-20 on Base powered by Proof of Agentic Work (PoAW). Three contracts + one library. Every mining rig NFT doubles as an on-chain AI agent identity (ERC-8004).
 
-## Contract 1: MiningAgent.sol — ERC-721 Mining Rig + ERC-8004 Agent Identity
+## Contract 1: MiningAgent.sol — ERC-8004 Mining Rig Agent Identity
 
 ```solidity
 // SPDX-License-Identifier: MIT
