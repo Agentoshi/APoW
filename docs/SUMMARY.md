@@ -18,3 +18,4 @@
 * [Smart Contracts](technical/contracts.md)
 * [Security](technical/security.md)
 * [Deployment](technical/deployment.md)
+* [RPC Scalability](technical/rpc-scalability.md)
