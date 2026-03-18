@@ -67,6 +67,12 @@ Exponential decay: starts at 0.002 ETH, drops 5% every 100 mints, floored at 0.0
 - **Agent wallet binding** — EIP-712 typed signatures verify wallet ownership. `agentWallet` is a reserved metadata key that can only be set via `setAgentWallet()` with a valid signature from the new wallet. Cleared automatically on NFT transfer.
 - **Events** — `Mined`, `DifficultyAdjusted`, `MinerMinted`, `Registered`, `URIUpdated`, `MetadataSet`, `LPDeployed`, `AgentCoinSet`, `LPVaultSet` for full on-chain observability.
 
+### Known Limitations
+
+- **L2 randomness** — `block.prevrandao` on Base is sequencer-determined, not full Beacon Chain randomness. Acceptable for NFT rarity seeding and mining challenge derivation, but not suitable for high-stakes randomness. This is inherent to all L2s using a centralized sequencer.
+- **Smart contract wallet exclusion** — `tx.origin == msg.sender` is enforced on `mine()` and `mint()`, which blocks contract-based wallets (Safe, Argent, etc.). This is an intentional bot-prevention measure. Users with smart contract wallets must mine from an EOA.
+- **UNCX fee assumption** — The LPVault hardcodes a 0.03 ETH fee for the UNCX eternal lock transaction. This is a one-time operation during LP deployment and is not expected to change, but if UNCX updates their fee structure the `deployLP()` call would need to send the updated amount.
+
 ## Post-Deploy
 
 After all setters are called, deployer should `renounceOwnership()` on all three contracts. This makes the system fully immutable — no admin can change any pointers.
@@ -81,7 +87,7 @@ contracts/
     LPVault.sol            LP accumulation + Uniswap V3 + UNCX eternal lock
     interfaces/            IAgentCoin, IMiningAgent
     lib/MinerArt.sol       On-chain generative pixel art
-  test/                    197 tests (unit, edge, integration, simulation, fork)
+  test/                    218 tests (unit, edge, integration, simulation, fork)
   script/                  Foundry deploy scripts
 miner/
   src/                     TypeScript mining client
@@ -93,7 +99,7 @@ miner/
 # Install dependencies
 cd contracts && forge install
 
-# Run tests (197 tests)
+# Run tests (218 tests)
 forge test
 
 # Run fork tests against Base mainnet
@@ -103,15 +109,62 @@ forge test --match-path test/LPVaultFork.t.sol --fork-url $BASE_RPC
 forge inspect MiningAgent storage-layout
 ```
 
+## Miner Client
+
+TypeScript CLI for mining $AGENT tokens. Solves SMHL puzzles via LLM + grinds SHA-3 nonces for PoW.
+
+```bash
+cd miner && npm install
+cp ../.env.example .env  # fill in contract addresses + keys
+```
+
+**Commands:**
+
+| Command | Description |
+|---------|-------------|
+| `npx ts-node src/miner.ts setup` | Check wallet balance, contract connectivity, NFT ownership |
+| `npx ts-node src/miner.ts mint` | Mint a MiningAgent NFT (solves SMHL challenge) |
+| `npx ts-node src/miner.ts mine <tokenId>` | Mine $AGENT with your NFT (SMHL + PoW loop) |
+| `npx ts-node src/miner.ts stats [tokenId]` | View mining stats, earnings, difficulty |
+
+**Configuration** (`.env`):
+
+- `MINER_PRIVATE_KEY` — EOA private key for mining transactions
+- `MINER_RPC_URL` — Base RPC endpoint
+- `MINING_AGENT_ADDRESS` / `AGENT_COIN_ADDRESS` — deployed contract addresses
+- `LLM_PROVIDER` — `openai`, `anthropic`, or `ollama`
+- `LLM_MODEL` — model name (e.g. `gpt-4o-mini`, `claude-sonnet-4-5-20250929`)
+
+The miner solves two challenges per mine: an SMHL string-manipulation puzzle (requires LLM reasoning) and a SHA-3 PoW nonce grind below the current difficulty target.
+
 ## Deploy Order
 
-1. Deploy `MiningAgent`
-2. Deploy `LPVault(deployer)`
+```bash
+# Deploy (matches Deploy.s.sol ordering)
+PRIVATE_KEY=$PK forge script script/Deploy.s.sol --rpc-url $BASE_RPC --broadcast
+```
+
+1. Deploy `LPVault(deployer)`
+2. Deploy `MiningAgent()`
 3. Deploy `AgentCoin(miningAgent, lpVault)` — mints 2.1M AGENT to LPVault
 4. `miningAgent.setLPVault(lpVault)`
 5. `miningAgent.setAgentCoin(agentCoin)`
 6. `lpVault.setAgentCoin(agentCoin)`
-7. Renounce ownership on all three contracts
+7. Verify system works (see checklist below)
+8. Renounce ownership: `forge script script/Renounce.s.sol --rpc-url $BASE_RPC --broadcast`
+
+### Post-Deploy Verification Checklist
+
+Before renouncing ownership, verify every component on mainnet:
+
+- [ ] LP reserve: `balanceOf(lpVault)` == 2,100,000 AGENT
+- [ ] Cross-refs: `miningAgent.lpVault()`, `miningAgent.agentCoin()`, `lpVault.agentCoin()` all correct
+- [ ] NFT mint: `getChallenge()` → solve SMHL → `mint()` within 20s → token minted with rarity + hashpower
+- [ ] ERC-8004: `setAgentURI()`, `setMetadata()`, `getAgentWallet()` all functional
+- [ ] Mining: `getMiningChallenge()` → solve SMHL + grind PoW nonce → `mine()` → reward credited
+- [ ] Transfer lock: transfer reverts while `lpDeployed == false`
+- [ ] Transfer unlock: `setLPDeployed()` via LPVault enables transfers
+- [ ] Miner client: addresses set in `.env`, mint + mine flows working
 
 ## Chain
 

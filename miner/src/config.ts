@@ -23,10 +23,9 @@ const DEFAULT_RPC_URL = "https://mainnet.base.org";
 const DEFAULT_LLM_PROVIDER: LlmProvider = "openai";
 const DEFAULT_LLM_MODEL = "gpt-4o";
 const DEFAULT_CHAIN_NAME: ChainName = "base";
-const DEFAULT_MINING_AGENT_ADDRESS =
-  "0x0000000000000000000000000000000000000001" as Address;
-const DEFAULT_AGENT_COIN_ADDRESS =
-  "0x0000000000000000000000000000000000000002" as Address;
+// Set via MINING_AGENT_ADDRESS and AGENT_COIN_ADDRESS env vars after mainnet deployment
+const DEFAULT_MINING_AGENT_ADDRESS = undefined;
+const DEFAULT_AGENT_COIN_ADDRESS = undefined;
 
 function normalizeProvider(value?: string): LlmProvider {
   if (value === "anthropic" || value === "ollama" || value === "openai") {
@@ -62,6 +61,19 @@ function parsePrivateKey(value?: string): Hex | undefined {
   return value as Hex;
 }
 
+function parseAddress(envKey: string, fallback: Address | undefined): Address {
+  const value = process.env[envKey];
+  if (value && /^0x[0-9a-fA-F]{40}$/.test(value)) {
+    return value as Address;
+  }
+  if (fallback) {
+    return fallback;
+  }
+  throw new Error(
+    `${envKey} is required. Set it to the deployed contract address (0x-prefixed, 40 hex chars).`,
+  );
+}
+
 const chainName = resolveChainName();
 
 export const config: AppConfig = {
@@ -72,8 +84,8 @@ export const config: AppConfig = {
   llmModel: process.env.LLM_MODEL ?? DEFAULT_LLM_MODEL,
   chain: chainName === "baseSepolia" ? baseSepolia : base,
   chainName,
-  miningAgentAddress: DEFAULT_MINING_AGENT_ADDRESS,
-  agentCoinAddress: DEFAULT_AGENT_COIN_ADDRESS,
+  miningAgentAddress: parseAddress("MINING_AGENT_ADDRESS", DEFAULT_MINING_AGENT_ADDRESS),
+  agentCoinAddress: parseAddress("AGENT_COIN_ADDRESS", DEFAULT_AGENT_COIN_ADDRESS),
 };
 
 export function requirePrivateKey(): Hex {

@@ -133,5 +133,41 @@
         "type": "uint256"
       }
     ]
+  },
+  {
+    "type": "function",
+    "name": "lastMineBlockNumber",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "MINEABLE_SUPPLY",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "ERA_INTERVAL",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ]
   }
 ]

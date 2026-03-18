@@ -14,3 +14,18 @@ miner/dist/
 
 # OS
 .DS_Store
+
+# Testnet helpers (kept locally, not in repo)
+contracts/*.js
+contracts/*.sh
+contracts/*.txt
+contracts/*.log
+contracts/deployed-addresses.json
+contracts/package.json
+contracts/package-lock.json
+
+# Untracked smoke/testnet scripts (kept locally)
+contracts/script/DeploySimple.s.sol
+contracts/script/SmokeTestFull.s.sol
+contracts/script/TestnetMintV2.s.sol
+contracts/src/smoke/Smoke*.sol

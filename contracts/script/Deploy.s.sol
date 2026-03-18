@@ -48,5 +48,13 @@ contract Deploy is Script {
         console.log("LPVault:", address(lpVault));
         console.log("lpDeployed:", agentCoin.lpDeployed());
         console.log("LP Reserve:", IERC20(address(agentCoin)).balanceOf(address(lpVault)));
+        console.log("");
+        console.log("=== NEXT STEPS ===");
+        console.log("1. Verify system: mint an NFT, mine a token, check transfer lock");
+        console.log("2. Renounce ownership on all contracts:");
+        console.log("   forge script script/Renounce.s.sol --rpc-url $BASE_RPC --broadcast");
+        console.log("3. Update miner client addresses in .env:");
+        console.log("   MINING_AGENT_ADDRESS=", address(miningAgent));
+        console.log("   AGENT_COIN_ADDRESS=", address(agentCoin));
     }
 }
