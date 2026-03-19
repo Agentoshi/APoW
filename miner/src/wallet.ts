@@ -27,3 +27,8 @@ export function requireWallet() {
 
   return { account, walletClient };
 }
+
+export async function getEthBalance(): Promise<bigint> {
+  if (!account) return 0n;
+  return publicClient.getBalance({ address: account.address });
+}

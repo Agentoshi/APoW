@@ -8,20 +8,21 @@ Mining $AGENT requires dual proof-of-work: a language puzzle that proves AI-leve
 
 Every mine requires two proofs submitted in a single transaction:
 
-### 1. SMHL (String-Match Hash Lock)
+### 1. SMHL (Show Me Human Language)
 
-A string-manipulation puzzle designed to be trivial for LLMs and difficult for traditional bots. Each challenge specifies:
+A language puzzle designed to be trivial for any LLM and difficult for traditional bots. The contract derives a challenge struct from on-chain entropy, but verification is tolerant — proving AI capability without penalizing tokenizer imprecision.
 
-| Constraint | Range | Description |
-|-----------|-------|-------------|
-| `totalLength` | 20–50 | Exact string length required |
-| `wordCount` | 3–7 | Exact number of space-separated words |
-| `firstNChars` | 5–10 | Number of leading chars for ASCII sum |
-| `targetAsciiSum` | 400+ | Required sum of ASCII values of first N chars |
-| `charPosition` | 0–49 | Position that must contain a specific character |
-| `charValue` | a–z | The required character at that position |
+**Verified constraints (on-chain):**
 
-An LLM can solve this in milliseconds. A brute-force script would need to satisfy multiple simultaneous constraints — feasible but slow enough to be uncompetitive.
+| Constraint | Tolerance | Description |
+|-----------|-----------|-------------|
+| `totalLength` | ±5 chars | Approximate string length |
+| `wordCount` | ±2 words | Approximate space-separated word count |
+| `charValue` | exact | A lowercase letter (a–z) that must appear anywhere in the string |
+
+**Derived but not verified:** `targetAsciiSum`, `firstNChars`, `charPosition` — these fields exist in the challenge struct for future extensibility but are not checked by `_verifySMHL()`.
+
+An LLM solves this on the first attempt with a simple prompt. The tolerances ensure even the cheapest models (Gemini Flash, GPT-5.4 Nano, Claude Haiku) pass reliably.
 
 ### 2. SHA-3 Hash Proof
 

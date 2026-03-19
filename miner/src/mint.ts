@@ -3,8 +3,11 @@ import { formatEther, hexToBytes } from "viem";
 
 import miningAgentAbiJson from "./abi/MiningAgent.json";
 import { config } from "./config";
+import { txUrl, tokenUrl } from "./explorer";
 import { normalizeSmhlChallenge, solveSmhlChallenge, type SmhlChallenge } from "./smhl";
-import { publicClient, requireWallet } from "./wallet";
+import { startMining } from "./miner";
+import * as ui from "./ui";
+import { getEthBalance, publicClient, requireWallet } from "./wallet";
 
 const miningAgentAbi = miningAgentAbiJson as Abi;
 const ZERO_SEED = `0x${"0".repeat(64)}` as Hex;
@@ -19,9 +22,9 @@ function deriveChallengeFromSeed(seed: Hex): SmhlChallenge {
   const charValue = 97 + (bytes[4] % 26);
 
   let targetAsciiSum = 400 + (bytes[1] * 3);
-  let maxAsciiSum = firstNChars * 255;
+  let maxAsciiSum = firstNChars * 126;
   if (charPosition < firstNChars) {
-    maxAsciiSum = maxAsciiSum - 255 + charValue;
+    maxAsciiSum = maxAsciiSum - 126 + charValue;
   }
 
   if (targetAsciiSum > maxAsciiSum) {
@@ -78,8 +81,44 @@ async function findMintedTokenId(
 
 export async function runMintFlow(): Promise<void> {
   const { account, walletClient } = requireWallet();
+  console.log("");
 
-  console.log(`Requesting mint challenge for ${account.address}...`);
+  // Fetch mint price and balance FIRST
+  const priceSpinner = ui.spinner("Fetching mint price...");
+  const [mintPrice, ethBalance] = await Promise.all([
+    publicClient.readContract({
+      address: config.miningAgentAddress,
+      abi: miningAgentAbi,
+      functionName: "getMintPrice",
+    }) as Promise<bigint>,
+    getEthBalance(),
+  ]);
+  priceSpinner.stop("Fetching mint price... done");
+
+  // Show price preview
+  console.log("");
+  ui.table([
+    ["Mint price", `${formatEther(mintPrice)} ETH`],
+    ["Balance", `${Number(formatEther(ethBalance)).toFixed(6)} ETH`],
+  ]);
+  console.log("");
+
+  if (ethBalance < mintPrice) {
+    ui.error("Insufficient ETH for mint.");
+    ui.hint(`Send at least ${formatEther(mintPrice)} ETH to ${account.address} on Base`);
+    return;
+  }
+
+  // Confirm before spending ETH
+  const proceed = await ui.confirm("Proceed with mint?");
+  if (!proceed) {
+    console.log("  Mint cancelled.");
+    return;
+  }
+  console.log("");
+
+  // Request challenge
+  const challengeSpinner = ui.spinner("Requesting challenge...");
   const challengeTx = await walletClient.writeContract({
     address: config.miningAgentAddress,
     abi: miningAgentAbi,
@@ -88,6 +127,7 @@ export async function runMintFlow(): Promise<void> {
     args: [account.address],
   });
   await publicClient.waitForTransactionReceipt({ hash: challengeTx });
+  challengeSpinner.stop("Requesting challenge... done");
 
   const challengeSeed = (await publicClient.readContract({
     address: config.miningAgentAddress,
@@ -100,24 +140,22 @@ export async function runMintFlow(): Promise<void> {
     throw new Error("Challenge seed was not stored on-chain.");
   }
 
+  // Solve SMHL
   const challenge = deriveChallengeFromSeed(challengeSeed);
-  console.log("Solving SMHL challenge...");
-  const solution = await solveSmhlChallenge(challenge);
+  const smhlSpinner = ui.spinner("Solving SMHL...");
+  const solution = await solveSmhlChallenge(challenge, (attempt) => {
+    smhlSpinner.update(`Solving SMHL... attempt ${attempt}/3`);
+  });
+  smhlSpinner.stop("Solving SMHL... done");
 
-  const [mintPrice, nextTokenIdBefore] = await Promise.all([
-    publicClient.readContract({
-      address: config.miningAgentAddress,
-      abi: miningAgentAbi,
-      functionName: "getMintPrice",
-    }) as Promise<bigint>,
-    publicClient.readContract({
-      address: config.miningAgentAddress,
-      abi: miningAgentAbi,
-      functionName: "nextTokenId",
-    }) as Promise<bigint>,
-  ]);
+  const nextTokenIdBefore = (await publicClient.readContract({
+    address: config.miningAgentAddress,
+    abi: miningAgentAbi,
+    functionName: "nextTokenId",
+  })) as bigint;
 
-  console.log(`Minting miner for ${formatEther(mintPrice)} ETH...`);
+  // Mint
+  const mintSpinner = ui.spinner("Minting...");
   const mintTx = await walletClient.writeContract({
     address: config.miningAgentAddress,
     abi: miningAgentAbi,
@@ -126,7 +164,10 @@ export async function runMintFlow(): Promise<void> {
     args: [solution],
     value: mintPrice,
   });
+  mintSpinner.update("Waiting for confirmation...");
   const receipt = await publicClient.waitForTransactionReceipt({ hash: mintTx });
+  mintSpinner.stop("Minting... confirmed");
+
   const nextTokenIdAfter = (await publicClient.readContract({
     address: config.miningAgentAddress,
     abi: miningAgentAbi,
@@ -157,9 +198,15 @@ export async function runMintFlow(): Promise<void> {
   const rarity = Number(rarityRaw);
   const hashpower = Number(hashpowerRaw);
 
-  console.log("Mint complete.");
-  console.log(`Token ID: ${tokenId.toString()}`);
-  console.log(`Rarity: ${rarityLabels[rarity] ?? `Tier ${rarity}`}`);
-  console.log(`Hashpower: ${formatHashpower(hashpower)}`);
-  console.log(`Transaction: ${receipt.transactionHash}`);
+  console.log("");
+  console.log(`  ${ui.green("Miner #" + tokenId.toString())} — ${rarityLabels[rarity] ?? `Tier ${rarity}`} (${formatHashpower(hashpower)})`);
+  console.log(`  Tx: ${ui.dim(txUrl(receipt.transactionHash))}`);
+  console.log(`  NFT: ${ui.dim(tokenUrl(config.miningAgentAddress, tokenId))}`);
+  console.log("");
+
+  // Offer to start mining
+  const startMine = await ui.confirm("Start mining?");
+  if (startMine) {
+    await startMining(tokenId);
+  }
 }

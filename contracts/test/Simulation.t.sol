@@ -392,7 +392,7 @@ contract SimulationTest is Test {
         uint256 remaining = uint256(c.targetAsciiSum) - currentSum;
         for (uint256 i = 0; i < c.firstNChars && remaining > 0; ++i) {
             if (i == c.charPosition || isSpace[i]) continue;
-            uint256 maxAdd = 255 - uint8(solution[i]);
+            uint256 maxAdd = 126 - uint8(solution[i]);
             uint256 add = remaining > maxAdd ? maxAdd : remaining;
             solution[i] = bytes1(uint8(uint8(solution[i]) + uint8(add)));
             remaining -= add;

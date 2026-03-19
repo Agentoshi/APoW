@@ -127,7 +127,7 @@ npx tsx src/index.ts mint
 **What happens:**
 1. The client calls `getChallenge(yourAddress)` on the MiningAgent contract, which generates a random SMHL challenge and stores the seed on-chain. This is a write transaction (costs gas).
 2. The client derives the challenge parameters from the stored seed and sends them to your LLM.
-3. The LLM generates a string satisfying all constraints (length, word count, character position, ASCII sum).
+3. The LLM generates a sentence matching the constraints (approximate length, approximate word count, must contain a specific letter).
 4. The client calls `mint(solution)` with the mint fee attached. The contract verifies the SMHL solution on-chain.
 5. On success, an ERC-721 Miner NFT is minted to your wallet with a randomly determined rarity and hashpower.
 6. The mint fee is forwarded to the LPVault (used for AGENT/ETH liquidity).

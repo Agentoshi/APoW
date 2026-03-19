@@ -246,16 +246,21 @@ contract AgentCoinEdgeTest is Test {
         ac.mine(0, "", 1);
     }
 
-    function testMine_InvalidSMHL_WrongChar() public {
+    function testMine_InvalidSMHL_MissingRequiredChar() public {
         _setMiningTarget(type(uint256).max);
         vm.roll(100);
 
         (, , AgentCoin.SMHLChallenge memory c) = ac.getMiningChallenge();
         string memory sol = _solveChallenge(c);
 
-        // Tamper with charPosition
+        // Replace ALL occurrences of required char with a different one
         bytes memory tampered = bytes(sol);
-        tampered[c.charPosition] = bytes1(uint8(c.charValue) == 97 ? 98 : 97);
+        uint8 replacement = c.charValue == 97 ? 98 : 97;
+        for (uint256 i = 0; i < tampered.length; ++i) {
+            if (uint8(tampered[i]) == c.charValue) {
+                tampered[i] = bytes1(replacement);
+            }
+        }
 
         vm.prank(user, user);
         vm.expectRevert("Invalid SMHL");
@@ -613,7 +618,7 @@ contract AgentCoinEdgeTest is Test {
         uint256 remaining = challenge.targetAsciiSum - currentSum;
         for (uint256 i = 0; i < challenge.firstNChars && remaining > 0; ++i) {
             if (i == challenge.charPosition) continue;
-            uint256 add = remaining > 222 ? 222 : remaining;
+            uint256 add = remaining > 93 ? 93 : remaining;
             solution[i] = bytes1(uint8(solution[i]) + uint8(add));
             remaining -= add;
         }
@@ -637,9 +642,9 @@ contract AgentCoinEdgeTest is Test {
         challenge.charValue = 97 + (uint8(seed[4]) % 26);
 
         uint16 rawTargetAsciiSum = 400 + (uint16(uint8(seed[1])) * 3);
-        uint16 maxAsciiSum = uint16(challenge.firstNChars) * 255;
+        uint16 maxAsciiSum = uint16(challenge.firstNChars) * 126;
         if (challenge.charPosition < challenge.firstNChars) {
-            maxAsciiSum = maxAsciiSum - 255 + challenge.charValue;
+            maxAsciiSum = maxAsciiSum - 126 + challenge.charValue;
         }
 
         if (rawTargetAsciiSum > maxAsciiSum) {
@@ -653,28 +658,23 @@ contract AgentCoinEdgeTest is Test {
         pure
         returns (bool)
     {
-        bytes memory chars = bytes(solution);
-        if (chars.length != c.totalLength) return false;
-        if (uint8(chars[c.charPosition]) != c.charValue) return false;
+        bytes memory b = bytes(solution);
+        uint256 len = b.length;
+        if (len + 5 < c.totalLength || len > uint256(c.totalLength) + 5) return false;
 
-        uint256 asciiSum;
-        for (uint256 i = 0; i < c.firstNChars; ++i) {
-            asciiSum += uint8(chars[i]);
-        }
-        if (asciiSum != c.targetAsciiSum) return false;
-
-        uint256 countedWords;
+        bool hasChar;
+        uint256 words;
         bool inWord;
-        for (uint256 i = 0; i < chars.length; ++i) {
-            if (chars[i] == bytes1(" ")) {
-                inWord = false;
-            } else if (!inWord) {
-                inWord = true;
-                ++countedWords;
-            }
+        for (uint256 i = 0; i < len; ++i) {
+            uint8 ch = uint8(b[i]);
+            if (ch == c.charValue) hasChar = true;
+            if (ch == 32) { inWord = false; }
+            else if (!inWord) { inWord = true; ++words; }
         }
+        if (!hasChar) return false;
 
-        return countedWords == c.wordCount;
+        uint256 wdiff = words > c.wordCount ? words - c.wordCount : uint256(c.wordCount) - words;
+        return wdiff <= 2;
     }
 
     function testFuzz_deriveChallenge_AlwaysSolvable(bytes32 seed) public pure {
@@ -688,18 +688,19 @@ contract AgentCoinEdgeTest is Test {
         assertTrue(c.charPosition < c.totalLength, "charPosition out of bounds");
         assertTrue(c.charValue >= 97 && c.charValue <= 122, "charValue not lowercase");
 
-        // Actually solve the challenge
+        // Solve: fill with 'A', place required char, place spaces for word boundaries
         bytes memory solution = new bytes(c.totalLength);
         bool[] memory isSpace = new bool[](c.totalLength);
 
         for (uint256 i = 0; i < c.totalLength; ++i) {
-            solution[i] = bytes1(uint8(65));
+            solution[i] = bytes1(uint8(65)); // 'A'
         }
         solution[c.charPosition] = bytes1(c.charValue);
 
         uint256 spacesNeeded = uint256(c.wordCount) - 1;
         uint256 spacesPlaced;
 
+        // Place spaces after firstNChars first
         if (c.totalLength > c.firstNChars) {
             uint256 pos = c.totalLength - 2;
             while (spacesPlaced < spacesNeeded && pos >= c.firstNChars) {
@@ -716,6 +717,7 @@ contract AgentCoinEdgeTest is Test {
             }
         }
 
+        // Fallback: place spaces within firstNChars
         if (spacesPlaced < spacesNeeded && c.firstNChars > 1) {
             uint256 pos = uint256(c.firstNChars) - 1;
             while (spacesPlaced < spacesNeeded && pos >= 1) {
@@ -732,72 +734,9 @@ contract AgentCoinEdgeTest is Test {
             }
         }
 
-        // All spaces must be placed
         assertEq(spacesPlaced, spacesNeeded, "Cannot place all spaces");
 
-        // Use base char \x01 (1) to handle low targetAsciiSum values.
-        // The SMHL verifier doesn't check printability, so any non-zero byte works.
-        // After distribution, fix any accidental byte=32 (space) which would break word count.
-        uint256 currentSum;
-        for (uint256 i = 0; i < c.firstNChars; ++i) {
-            if (isSpace[i]) {
-                currentSum += 32;
-            } else if (i == c.charPosition) {
-                currentSum += c.charValue;
-            } else {
-                solution[i] = bytes1(uint8(1));
-                currentSum += 1;
-            }
-        }
-
-        uint256 remaining = uint256(c.targetAsciiSum) - currentSum;
-        for (uint256 i = 0; i < c.firstNChars && remaining > 0; ++i) {
-            if (i == c.charPosition || isSpace[i]) continue;
-            uint256 maxAdd = 255 - uint8(solution[i]);
-            uint256 add = remaining > maxAdd ? maxAdd : remaining;
-            solution[i] = bytes1(uint8(uint8(solution[i]) + uint8(add)));
-            remaining -= add;
-        }
-
-        assertEq(remaining, 0, "Cannot reach target ASCII sum");
-
-        // Post-fix: if any adjustable char in firstNChars ended up at 32 (space),
-        // replace with 31 and compensate by increasing another char by 1.
-        for (uint256 i = 0; i < c.firstNChars; ++i) {
-            if (isSpace[i] || i == c.charPosition) continue;
-            if (uint8(solution[i]) == 32) {
-                solution[i] = bytes1(uint8(31)); // 32 → 31, sum decreases by 1
-                // Compensate: increase another adjustable char by 1
-                for (uint256 j = 0; j < c.firstNChars; ++j) {
-                    if (j == i || isSpace[j] || j == c.charPosition) continue;
-                    uint8 val = uint8(solution[j]);
-                    if (val < 255 && val + 1 != 32) {
-                        solution[j] = bytes1(val + 1);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (!isSpace[c.charPosition]) {
-            solution[c.charPosition] = bytes1(c.charValue);
-        }
-
-        // Verify the solution passes all SMHL checks
+        // Verify the solution passes all SMHL checks (length + char + word count)
         assertTrue(_verifySMHLLocal(string(solution), c), "Solution failed verification");
-    }
-
-    function testFuzz_deriveChallenge_TargetAsciiSumInRange(bytes32 seed) public pure {
-        AgentCoin.SMHLChallenge memory c = _deriveChallengeLocal(seed);
-
-        // targetAsciiSum should always be >= 400 (minimum from derivation)
-        assertTrue(c.targetAsciiSum >= 400, "targetAsciiSum below minimum");
-
-        // Compute max achievable ASCII sum for firstNChars
-        uint16 maxAchievable = uint16(c.firstNChars) * 255;
-        if (c.charPosition < c.firstNChars) {
-            maxAchievable = maxAchievable - 255 + c.charValue;
-        }
-        assertTrue(c.targetAsciiSum <= maxAchievable, "targetAsciiSum exceeds maximum");
     }
 }

@@ -199,9 +199,9 @@ contract MiningAgentTest is Test {
         challenge.charValue = 97 + (uint8(seed[4]) % 26);
 
         uint16 rawTargetAsciiSum = 400 + (uint16(uint8(seed[1])) * 3);
-        uint16 maxAsciiSum = uint16(challenge.firstNChars) * 255;
+        uint16 maxAsciiSum = uint16(challenge.firstNChars) * 126;
         if (challenge.charPosition < challenge.firstNChars) {
-            maxAsciiSum = maxAsciiSum - 255 + challenge.charValue;
+            maxAsciiSum = maxAsciiSum - 126 + challenge.charValue;
         }
 
         if (rawTargetAsciiSum > maxAsciiSum) {
@@ -261,7 +261,7 @@ contract MiningAgentTest is Test {
                 continue;
             }
 
-            uint256 add = remaining > 222 ? 222 : remaining;
+            uint256 add = remaining > 93 ? 93 : remaining;
             solution[i] = bytes1(uint8(solution[i]) + uint8(add));
             remaining -= add;
         }

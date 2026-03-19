@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Command } from "commander";
 
-import { config } from "./config";
+import { config, isExpensiveModel, writeEnvFile, type LlmProvider } from "./config";
+import { detectMiners, formatHashpower, selectBestMiner } from "./detect";
 import { runMintFlow } from "./mint";
 import { startMining } from "./miner";
+import { runPreflight } from "./preflight";
 import { displayStats } from "./stats";
+import * as ui from "./ui";
+import { account } from "./wallet";
 
 function parseTokenId(value: string): bigint {
   try {
@@ -15,56 +21,229 @@ function parseTokenId(value: string): bigint {
   }
 }
 
-function printSetupInstructions(): void {
-  console.log("Create a .env file with these values:");
+function readVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8"));
+    return pkg.version ?? "0.1.0";
+  } catch {
+    return "0.1.0";
+  }
+}
+
+async function resolveTokenId(tokenIdArg?: string): Promise<bigint> {
+  if (tokenIdArg) {
+    return parseTokenId(tokenIdArg);
+  }
+
+  if (!account) {
+    ui.error("No token ID provided and no wallet configured.");
+    ui.hint("Usage: agentcoin mine <tokenId> or configure PRIVATE_KEY in .env");
+    process.exit(1);
+  }
+
+  const miners = await detectMiners(account.address);
+  if (miners.length === 0) {
+    ui.error("No mining rigs found for this wallet.");
+    ui.hint("Run `agentcoin mint` to mint a miner NFT first.");
+    process.exit(1);
+  }
+
+  const best = selectBestMiner(miners);
+  if (miners.length === 1) {
+    console.log(`  Using miner #${best.tokenId} (${best.rarityLabel}, ${formatHashpower(best.hashpower)})`);
+  } else {
+    console.log(`  Found ${miners.length} miners — using #${best.tokenId} (${best.rarityLabel}, ${formatHashpower(best.hashpower)})`);
+    for (const m of miners) {
+      const marker = m.tokenId === best.tokenId ? ui.green(" *") : "  ";
+      console.log(`  ${marker} #${m.tokenId} — ${m.rarityLabel} (${formatHashpower(m.hashpower)})`);
+    }
+  }
+
+  return best.tokenId;
+}
+
+async function setupWizard(): Promise<void> {
   console.log("");
-  console.log("PRIVATE_KEY=0xYOUR_PRIVATE_KEY");
-  console.log(`RPC_URL=${config.rpcUrl}`);
-  console.log("CHAIN=base");
-  console.log(`LLM_PROVIDER=${config.llmProvider}`);
-  console.log("LLM_API_KEY=your-provider-key");
-  console.log(`LLM_MODEL=${config.llmModel}`);
+  ui.banner(["AgentCoin Miner Setup"]);
   console.log("");
-  console.log(`MiningAgent address placeholder: ${config.miningAgentAddress}`);
-  console.log(`AgentCoin address placeholder: ${config.agentCoinAddress}`);
+
+  const values: Record<string, string> = {};
+
+  // Step 1: Wallet
+  console.log(`  ${ui.bold("Step 1/3: Wallet")}`);
+  const privateKey = await ui.promptSecret("Private key (0x-prefixed)");
+  if (!privateKey) {
+    ui.error("Private key is required.");
+    return;
+  }
+  if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey)) {
+    ui.error("Invalid private key format. Must be 0x + 64 hex characters.");
+    return;
+  }
+  values.PRIVATE_KEY = privateKey;
+
+  // Derive address for display
+  const { privateKeyToAccount } = await import("viem/accounts");
+  const walletAccount = privateKeyToAccount(privateKey as `0x${string}`);
+  const addr = walletAccount.address;
+  ui.ok(`Wallet: ${addr.slice(0, 6)}...${addr.slice(-4)}`);
+  console.log("");
+
+  // Step 2: RPC
+  console.log(`  ${ui.bold("Step 2/3: RPC")}`);
+  const rpcUrl = await ui.prompt("Base RPC URL", "https://mainnet.base.org");
+  values.RPC_URL = rpcUrl;
+
+  // Validate RPC connectivity
+  try {
+    const { createPublicClient, http } = await import("viem");
+    const { base, baseSepolia } = await import("viem/chains");
+    const isSepolia = rpcUrl.toLowerCase().includes("sepolia");
+    const testClient = createPublicClient({
+      chain: isSepolia ? baseSepolia : base,
+      transport: http(rpcUrl),
+    });
+    const blockNumber = await testClient.getBlockNumber();
+    const networkName = isSepolia ? "Base Sepolia" : "Base mainnet";
+    ui.ok(`Connected — ${networkName}, block #${blockNumber.toLocaleString()}`);
+    if (isSepolia) values.CHAIN = "baseSepolia";
+  } catch {
+    ui.fail("Could not connect to RPC");
+    ui.hint("Continuing anyway — you can fix RPC_URL in .env later");
+  }
+  console.log("");
+
+  // Step 3: LLM
+  console.log(`  ${ui.bold("Step 3/3: LLM Provider")}`);
+  const providerInput = await ui.prompt("Provider (openai/anthropic/gemini/ollama)", "openai");
+  const provider = (["openai", "anthropic", "gemini", "ollama"].includes(providerInput) ? providerInput : "openai") as LlmProvider;
+  values.LLM_PROVIDER = provider;
+
+  if (provider !== "ollama") {
+    const apiKey = await ui.promptSecret("API key");
+    if (apiKey) {
+      values.LLM_API_KEY = apiKey;
+      ui.ok(`${provider} key set`);
+    } else {
+      ui.fail("No API key provided");
+      ui.hint(`Set LLM_API_KEY in .env later`);
+    }
+  } else {
+    const ollamaUrl = await ui.prompt("Ollama URL", "http://127.0.0.1:11434");
+    values.OLLAMA_URL = ollamaUrl;
+    ui.ok(`Ollama at ${ollamaUrl}`);
+  }
+
+  const defaultModel = provider === "gemini" ? "gemini-2.5-flash" : provider === "anthropic" ? "claude-sonnet-4-5-20250929" : "gpt-4o-mini";
+  const model = await ui.prompt("Model", defaultModel);
+  values.LLM_MODEL = model;
+
+  if (isExpensiveModel(model)) {
+    ui.warn(`${model} is expensive. Consider gpt-4o-mini for lower cost.`);
+  }
+
+  // Contract addresses
+  values.MINING_AGENT_ADDRESS = config.miningAgentAddress ?? "";
+  values.AGENT_COIN_ADDRESS = config.agentCoinAddress ?? "";
+
+  console.log("");
+
+  // Check for existing .env
+  const envPath = join(process.cwd(), ".env");
+  if (existsSync(envPath)) {
+    const overwrite = await ui.confirm("Overwrite existing .env?");
+    if (!overwrite) {
+      console.log("  Setup cancelled.");
+      return;
+    }
+  }
+
+  await writeEnvFile(values);
+  ui.ok("Config saved to .env");
+
+  // Check .gitignore
+  const gitignorePath = join(process.cwd(), ".gitignore");
+  if (existsSync(gitignorePath)) {
+    const gitignore = readFileSync(gitignorePath, "utf8");
+    if (!gitignore.includes(".env")) {
+      ui.warn(".gitignore does not include .env — your secrets may be committed!");
+      ui.hint("Add .env to .gitignore");
+    }
+  }
+
+  console.log("");
+  console.log(`  Next: ${ui.cyan("agentcoin mint")}`);
+  console.log("");
 }
 
 async function main(): Promise<void> {
+  const version = readVersion();
   const program = new Command();
+
+  // SIGINT handler
+  process.on("SIGINT", () => {
+    ui.stopAll();
+    console.log("");
+    console.log(ui.dim("  Interrupted. Bye!"));
+    process.exit(0);
+  });
 
   program
     .name("agentcoin")
-    .description("AgentCoin mining client")
-    .version("0.1.0");
+    .description("Mine AGENT tokens on Base L2 with AI-powered proof of work")
+    .version(version);
 
   program
     .command("setup")
-    .description("Show the environment variables needed to configure the miner")
-    .action(() => {
-      printSetupInstructions();
+    .description("Interactive setup wizard — configure wallet, RPC, and LLM")
+    .action(async () => {
+      await setupWizard();
     });
 
   program
     .command("mint")
-    .description("Request a mint challenge, solve it, and mint a miner NFT")
+    .description("Mint a new miner NFT")
+    .hook("preAction", async () => {
+      await runPreflight("wallet");
+    })
     .action(async () => {
       await runMintFlow();
     });
 
   program
     .command("mine")
-    .description("Start the mining loop with a miner NFT")
-    .argument("<tokenId>", "Miner token ID")
-    .action(async (tokenId: string) => {
-      await startMining(parseTokenId(tokenId));
+    .description("Start the mining loop")
+    .argument("[tokenId]", "Miner token ID (auto-detects if omitted)")
+    .hook("preAction", async () => {
+      await runPreflight("mining");
+    })
+    .action(async (tokenIdArg?: string) => {
+      const tokenId = await resolveTokenId(tokenIdArg);
+      await startMining(tokenId);
     });
 
   program
     .command("stats")
-    .description("Show network stats and optional miner stats")
-    .argument("[tokenId]", "Miner token ID")
-    .action(async (tokenId?: string) => {
-      await displayStats(tokenId ? parseTokenId(tokenId) : undefined);
+    .description("Show network and miner statistics")
+    .argument("[tokenId]", "Miner token ID (auto-detects if omitted)")
+    .hook("preAction", async () => {
+      await runPreflight("readonly");
+    })
+    .action(async (tokenIdArg?: string) => {
+      let tokenId: bigint | undefined;
+      if (tokenIdArg) {
+        tokenId = parseTokenId(tokenIdArg);
+      } else if (account) {
+        try {
+          const miners = await detectMiners(account.address);
+          if (miners.length > 0) {
+            tokenId = selectBestMiner(miners).tokenId;
+          }
+        } catch {
+          // No miners — show network stats only
+        }
+      }
+      await displayStats(tokenId);
     });
 
   await program.parseAsync(process.argv);
@@ -72,6 +251,6 @@ async function main(): Promise<void> {
 
 main().catch((error) => {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(message);
+  ui.error(message);
   process.exitCode = 1;
 });

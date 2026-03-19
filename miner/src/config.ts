@@ -1,10 +1,12 @@
 import { config as loadEnv } from "dotenv";
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { Address, Chain, Hex } from "viem";
 import { base, baseSepolia } from "viem/chains";
 
 loadEnv();
 
-export type LlmProvider = "openai" | "anthropic" | "ollama";
+export type LlmProvider = "openai" | "anthropic" | "ollama" | "gemini";
 export type ChainName = "base" | "baseSepolia";
 
 export interface AppConfig {
@@ -13,22 +15,28 @@ export interface AppConfig {
   llmProvider: LlmProvider;
   llmApiKey?: string;
   llmModel: string;
+  ollamaUrl: string;
   chain: Chain;
   chainName: ChainName;
   miningAgentAddress: Address;
   agentCoinAddress: Address;
 }
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;
+
 const DEFAULT_RPC_URL = "https://mainnet.base.org";
 const DEFAULT_LLM_PROVIDER: LlmProvider = "openai";
-const DEFAULT_LLM_MODEL = "gpt-4o";
+const DEFAULT_LLM_MODEL = "gpt-4o-mini";
+const DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434";
 const DEFAULT_CHAIN_NAME: ChainName = "base";
 // Set via MINING_AGENT_ADDRESS and AGENT_COIN_ADDRESS env vars after mainnet deployment
 const DEFAULT_MINING_AGENT_ADDRESS = undefined;
 const DEFAULT_AGENT_COIN_ADDRESS = undefined;
 
+const EXPENSIVE_MODELS = ["gpt-4o", "gpt-4", "claude-3-opus", "claude-3-5-sonnet"];
+
 function normalizeProvider(value?: string): LlmProvider {
-  if (value === "anthropic" || value === "ollama" || value === "openai") {
+  if (value === "anthropic" || value === "ollama" || value === "openai" || value === "gemini") {
     return value;
   }
 
@@ -69,9 +77,8 @@ function parseAddress(envKey: string, fallback: Address | undefined): Address {
   if (fallback) {
     return fallback;
   }
-  throw new Error(
-    `${envKey} is required. Set it to the deployed contract address (0x-prefixed, 40 hex chars).`,
-  );
+  // Return zero address instead of throwing — preflight checks will catch this
+  return ZERO_ADDRESS;
 }
 
 const chainName = resolveChainName();
@@ -82,6 +89,7 @@ export const config: AppConfig = {
   llmProvider: normalizeProvider(process.env.LLM_PROVIDER),
   llmApiKey: process.env.LLM_API_KEY,
   llmModel: process.env.LLM_MODEL ?? DEFAULT_LLM_MODEL,
+  ollamaUrl: process.env.OLLAMA_URL ?? DEFAULT_OLLAMA_URL,
   chain: chainName === "baseSepolia" ? baseSepolia : base,
   chainName,
   miningAgentAddress: parseAddress("MINING_AGENT_ADDRESS", DEFAULT_MINING_AGENT_ADDRESS),
@@ -106,4 +114,15 @@ export function requireLlmApiKey(): string {
   }
 
   return config.llmApiKey;
+}
+
+export function isExpensiveModel(model: string): boolean {
+  return EXPENSIVE_MODELS.some((m) => model.toLowerCase().startsWith(m));
+}
+
+export async function writeEnvFile(values: Record<string, string>): Promise<void> {
+  const lines = Object.entries(values)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+  await writeFile(join(process.cwd(), ".env"), lines + "\n", "utf8");
 }

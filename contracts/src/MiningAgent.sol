@@ -22,6 +22,7 @@ contract MiningAgent is ERC721Enumerable, Ownable, ReentrancyGuardTransient, EIP
     uint256 public constant DECAY_DEN = 100;
     uint256 public constant CHALLENGE_DURATION = 20;
 
+
     bytes32 private constant AGENT_WALLET_SET_TYPEHASH =
         keccak256("AgentWalletSet(uint256 agentId,address newWallet,address owner,uint256 deadline)");
     uint256 private constant MAX_DEADLINE_DELAY = 5 minutes;
@@ -213,9 +214,9 @@ contract MiningAgent is ERC721Enumerable, Ownable, ReentrancyGuardTransient, EIP
         challenge.charValue = 97 + (uint8(seed[4]) % 26);
 
         uint16 rawTargetAsciiSum = 400 + (uint16(uint8(seed[1])) * 3);
-        uint16 maxAsciiSum = uint16(challenge.firstNChars) * 255;
+        uint16 maxAsciiSum = uint16(challenge.firstNChars) * 126;
         if (challenge.charPosition < challenge.firstNChars) {
-            maxAsciiSum = maxAsciiSum - 255 + challenge.charValue;
+            maxAsciiSum = maxAsciiSum - 126 + challenge.charValue;
         }
 
         if (rawTargetAsciiSum > maxAsciiSum) {
@@ -225,35 +226,26 @@ contract MiningAgent is ERC721Enumerable, Ownable, ReentrancyGuardTransient, EIP
     }
 
     function _verifySMHL(string calldata solution, SMHLChallenge memory c) internal pure returns (bool) {
-        bytes calldata chars = bytes(solution);
-        if (chars.length != c.totalLength) {
-            return false;
-        }
+        bytes calldata b = bytes(solution);
+        uint256 len = b.length;
 
-        if (uint8(chars[c.charPosition]) != c.charValue) {
-            return false;
-        }
+        // Length tolerance: ±5
+        if (len + 5 < c.totalLength || len > uint256(c.totalLength) + 5) return false;
 
-        uint256 asciiSum;
-        for (uint256 i = 0; i < c.firstNChars; ++i) {
-            asciiSum += uint8(chars[i]);
-        }
-        if (asciiSum != c.targetAsciiSum) {
-            return false;
-        }
-
-        uint256 countedWords;
+        bool hasChar;
+        uint256 words;
         bool inWord;
-        for (uint256 i = 0; i < chars.length; ++i) {
-            if (chars[i] == bytes1(" ")) {
-                inWord = false;
-            } else if (!inWord) {
-                inWord = true;
-                ++countedWords;
-            }
+        for (uint256 i = 0; i < len; ++i) {
+            uint8 ch = uint8(b[i]);
+            if (ch == c.charValue) hasChar = true;
+            if (ch == 32) { inWord = false; }
+            else if (!inWord) { inWord = true; ++words; }
         }
+        if (!hasChar) return false;
 
-        return countedWords == c.wordCount;
+        // Word count tolerance: ±2
+        uint256 wdiff = words > c.wordCount ? words - c.wordCount : uint256(c.wordCount) - words;
+        return wdiff <= 2;
     }
 
     // Required overrides for ERC721Enumerable + IMiningAgent

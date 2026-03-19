@@ -428,7 +428,7 @@ interface IAgentCoin {
 ### MiningAgentEdge.t.sol (64 tests)
 **Access control (10):** contract caller reverts, owner-only setters, already-set reverts, zero-address reverts, getChallenge open to all
 **Challenge lifecycle (7):** no challenge reverts, exact expiry boundary, same-block mint, double-mint reverts, overwrite previous, nonce increments, two-user independence
-**SMHL verification (6):** wrong length (short/long), empty string, wrong char at position, wrong ASCII sum, wrong word count, leading spaces
+**SMHL verification (6):** wrong length (short/long), empty string, missing required char, wrong word count, leading spaces
 **Payment (6):** insufficient fee, overpayment forwards all, zero value, LPVault not set, rejecting vault, fee forwarding
 **Pricing (3):** initial price, first step boundary, floor reached
 **Supply (1):** last token mint succeeds

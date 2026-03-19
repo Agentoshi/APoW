@@ -275,9 +275,10 @@ contract MiningAgentEdgeTest is Test {
         MiningAgent.SMHLChallenge memory c = ma.getChallenge(user);
         uint256 price = ma.getMintPrice();
 
-        // Create solution that's 1 char too short
-        bytes memory shortSol = new bytes(c.totalLength - 1);
-        for (uint256 i = 0; i < shortSol.length; ++i) shortSol[i] = "A";
+        // Create solution that's 10 chars too short (beyond ±5 tolerance)
+        uint256 shortLen = c.totalLength > 10 ? c.totalLength - 10 : 1;
+        bytes memory shortSol = new bytes(shortLen);
+        for (uint256 i = 0; i < shortSol.length; ++i) shortSol[i] = bytes1(c.charValue);
 
         vm.prank(user, user);
         vm.expectRevert("Invalid SMHL");
@@ -290,8 +291,9 @@ contract MiningAgentEdgeTest is Test {
         MiningAgent.SMHLChallenge memory c = ma.getChallenge(user);
         uint256 price = ma.getMintPrice();
 
-        bytes memory longSol = new bytes(c.totalLength + 1);
-        for (uint256 i = 0; i < longSol.length; ++i) longSol[i] = "A";
+        // Create solution that's 10 chars too long (beyond ±5 tolerance)
+        bytes memory longSol = new bytes(c.totalLength + 10);
+        for (uint256 i = 0; i < longSol.length; ++i) longSol[i] = bytes1(c.charValue);
 
         vm.prank(user, user);
         vm.expectRevert("Invalid SMHL");
@@ -309,40 +311,19 @@ contract MiningAgentEdgeTest is Test {
         ma.mint{value: price}("");
     }
 
-    function testSMHL_WrongCharAtPosition() public {
+    function testSMHL_MissingRequiredChar() public {
         vm.prevrandao(uint256(403));
         vm.prank(user, user);
         MiningAgent.SMHLChallenge memory c = ma.getChallenge(user);
         string memory solution = _solveChallenge(c);
         uint256 price = ma.getMintPrice();
 
-        // Tamper with char at charPosition
+        // Replace ALL occurrences of the required char with a different one
         bytes memory tampered = bytes(solution);
-        tampered[c.charPosition] = bytes1(uint8(c.charValue) == 97 ? 98 : 97);
-
-        vm.prank(user, user);
-        vm.expectRevert("Invalid SMHL");
-        ma.mint{value: price}(string(tampered));
-    }
-
-    function testSMHL_WrongAsciiSum() public {
-        vm.prevrandao(uint256(404));
-        vm.prank(user, user);
-        MiningAgent.SMHLChallenge memory c = ma.getChallenge(user);
-        string memory solution = _solveChallenge(c);
-        uint256 price = ma.getMintPrice();
-
-        // Tamper with a character in the firstNChars range (not at charPosition)
-        // to break the ASCII sum. Swap two adjacent non-charPosition chars by +1/-1
-        bytes memory tampered = bytes(solution);
-        uint256 idx = c.charPosition == 0 ? 1 : 0;
-        if (idx < c.firstNChars) {
-            uint8 val = uint8(tampered[idx]);
-            // Safely increase by 1 if under 255, else decrease by 1
-            if (val < 255) {
-                tampered[idx] = bytes1(val + 1);
-            } else {
-                tampered[idx] = bytes1(val - 1);
+        uint8 replacement = c.charValue == 97 ? 98 : 97;
+        for (uint256 i = 0; i < tampered.length; ++i) {
+            if (uint8(tampered[i]) == c.charValue) {
+                tampered[i] = bytes1(replacement);
             }
         }
 
@@ -351,21 +332,20 @@ contract MiningAgentEdgeTest is Test {
         ma.mint{value: price}(string(tampered));
     }
 
-    function testSMHL_WrongWordCount_TooFew() public {
+    function testSMHL_WrongWordCount() public {
         vm.prevrandao(uint256(405));
         vm.prank(user, user);
         MiningAgent.SMHLChallenge memory c = ma.getChallenge(user);
-        string memory solution = _solveChallenge(c);
         uint256 price = ma.getMintPrice();
 
-        // Remove a space to reduce word count
-        bytes memory tampered = bytes(solution);
-        for (uint256 i = c.firstNChars; i < tampered.length; ++i) {
-            if (tampered[i] == " " && i != c.charPosition) {
-                tampered[i] = "X";
-                break;
-            }
+        // Build solution with correct length and required char, but way too many words
+        // Alternate char and space: "a a a a ..." gives totalLength/2 words
+        bytes memory tampered = new bytes(c.totalLength);
+        for (uint256 i = 0; i < c.totalLength; ++i) {
+            tampered[i] = (i % 2 == 0) ? bytes1(c.charValue) : bytes1(uint8(32));
         }
+        // Ensure last char is not a space
+        tampered[c.totalLength - 1] = bytes1(c.charValue);
 
         vm.prank(user, user);
         vm.expectRevert("Invalid SMHL");
@@ -882,7 +862,7 @@ contract MiningAgentEdgeTest is Test {
         uint256 remaining = challenge.targetAsciiSum - currentSum;
         for (uint256 i = 0; i < challenge.firstNChars && remaining > 0; ++i) {
             if (i == challenge.charPosition) continue;
-            uint256 add = remaining > 222 ? 222 : remaining;
+            uint256 add = remaining > 93 ? 93 : remaining;
             solution[i] = bytes1(uint8(solution[i]) + uint8(add));
             remaining -= add;
         }

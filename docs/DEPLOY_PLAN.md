@@ -4,6 +4,8 @@
 **Network:** Base Mainnet (Chain ID: 8453)
 **One-time use. Irreversible after Step 8.**
 
+This document is self-contained. If all other context is lost, reading this file alone is sufficient to execute deployment correctly.
+
 ---
 
 ## Prerequisites
@@ -14,62 +16,121 @@
   - ~0.01 ETH for contract deployments (3 contracts + cross-wiring)
   - ~0.002 ETH for smoke-test mint
   - Gas for DeployLP and Renounce scripts
-  - Total: ~0.05 ETH minimum in deployer wallet (excludes LP funding)
-- [ ] **Basescan API key** for contract verification
+  - **Total: ~0.05 ETH minimum in deployer wallet (excludes LP funding)**
+- [ ] **Basescan API key** for contract verification (https://basescan.org/myapikey)
 - [ ] **LLM API key** for miner SMHL challenges (OpenAI, Anthropic, or local Ollama)
 - [ ] All contracts compiled and tests passing: `cd contracts && forge build && forge test`
+- [ ] Fork tests passing: `forge test --match-path test/LPVaultFork.t.sol --fork-url $BASE_RPC -vvv`
 
 ---
 
 ## Environment Setup
 
-Create `.env` in the project root (never commit this file):
+Create `.env` in the **project root** (`~/dev/agentcoin/.env`). **Never commit this file.**
 
 ```bash
-# RPC
+# ──────────────────────────────────────────────
+# REQUIRED BEFORE STEP 1 (Contract Deployment)
+# ──────────────────────────────────────────────
+
+# Base Mainnet RPC (Alchemy/Infura recommended for reliability)
 BASE_RPC=https://mainnet.base.org
 
-# Deployer wallet
-PRIVATE_KEY=<deployer-private-key>
+# Deployer wallet private key (0x-prefixed, 64 hex chars)
+PRIVATE_KEY=0x<deployer-private-key>
 
-# Basescan verification
+# Basescan API key for contract verification
 BASESCAN_API_KEY=<basescan-api-key>
 
-# Set after Step 1 (contract deployment)
-MINING_AGENT_ADDRESS=
+# ──────────────────────────────────────────────
+# SET AFTER STEP 1 (from deployment output)
+# ──────────────────────────────────────────────
+
+# Deployed contract addresses (0x-prefixed, 40 hex chars)
 AGENT_COIN_ADDRESS=
+MINING_AGENT_ADDRESS=
 LP_VAULT_ADDRESS=
 
-# Miner client (for smoke tests in Steps 3-4)
+# ──────────────────────────────────────────────
+# REQUIRED FOR STEPS 3-4 (Smoke Tests via Miner CLI)
+# ──────────────────────────────────────────────
+
+# Miner client uses different env var names
 MINER_PRIVATE_KEY=<same-as-PRIVATE_KEY-for-smoke-test>
 MINER_RPC_URL=https://mainnet.base.org
+
+# LLM for SMHL challenge solving
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4o-mini
-OPENAI_API_KEY=<openai-key>
+LLM_API_KEY=<openai-api-key>
+# Alternative providers:
+# LLM_PROVIDER=anthropic  LLM_API_KEY=<anthropic-key>
+# LLM_PROVIDER=ollama     (no key needed, requires local Ollama)
+
+# ──────────────────────────────────────────────
+# OPTIONAL
+# ──────────────────────────────────────────────
+
+# Explicit chain override (auto-detected from RPC URL if omitted)
+# CHAIN=base
+
+# Base Sepolia (testnet only, not used in production)
+# BASE_SEPOLIA_RPC=https://sepolia.base.org
 ```
 
-Source the env before running forge scripts:
-
+**Source the env before every forge command:**
 ```bash
 source .env
 ```
 
 ---
 
-## Deployment Steps
+## Contract Architecture
 
-| Step | Action | Verification |
-|------|--------|--------------|
-| 1 | Deploy contracts | All 3 contracts deployed, cross-wired, 2.1M AGENT in vault |
-| 2 | Verify on Basescan | All contracts verified, source readable |
-| 3 | Smoke test: mint 1 NFT | Token #1 minted, fee forwarded to vault |
-| 4 | Smoke test: mine 1 block | 1 mine confirmed, AGENT earned, transfers still locked |
-| 5 | Fund LP vault | Vault balance >= 4.93 ETH |
-| 6 | Deploy liquidity pool | LP deployed, pool created, UNCX locked, transfers unlocked |
-| 7 | Verify LP deployment | Uniswap pool visible, UNCX eternal lock confirmed |
-| **8** | **RENOUNCE OWNERSHIP** | **All 3 owners == address(0). POINT OF NO RETURN.** |
-| 9 | Verify immutability | All admin functions permanently disabled |
-| 10 | Publish and announce | Addresses discoverable, miner defaults updated |
+```
+LPVault (receives ETH from mints, deploys Uniswap V3 LP)
+  ↕ setAgentCoin()
+AgentCoin (ERC-20, 21M supply, embedded PoW mining)
+  ↕ constructor(miningAgent, lpVault)
+MiningAgent (ERC-721 + ERC-8004 miner NFTs, 10k supply)
+  ↕ setLPVault(), setAgentCoin()
+```
+
+**Key constants (hardcoded in contracts, not configurable):**
+
+| Constant | Value | Contract |
+|----------|-------|----------|
+| MAX_SUPPLY | 21,000,000 AGENT | AgentCoin |
+| LP_RESERVE | 2,100,000 AGENT | AgentCoin |
+| MINEABLE_SUPPLY | 18,900,000 AGENT | AgentCoin |
+| BASE_REWARD | 3 AGENT per mine | AgentCoin |
+| LP_DEPLOY_THRESHOLD | 4.9 ETH | LPVault |
+| UNCX_FLAT_FEE | 0.03 ETH | LPVault |
+| FEE_TIER | 3000 (0.3%) | LPVault |
+| ETERNAL_LOCK | type(uint256).max | LPVault |
+| WETH | 0x4200000000000000000000000000000000000006 | LPVault |
+| USDC | 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 | LPVault |
+| SWAP_ROUTER | 0x2626664c2603336E57B271c5C0b26F421741e481 | LPVault |
+| POSITION_MANAGER | 0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1 | LPVault |
+| UNCX_V3_LOCKER | 0x231278eDd38B00B07fBd52120CEf685B9BaEBCC1 | LPVault |
+| UNISWAP_V3_FACTORY | 0x33128a8fC17869897dcE68Ed026d694621f6FDfD | LPVault |
+
+---
+
+## Deployment Steps Overview
+
+| Step | Action | Verification | Reversible? |
+|------|--------|--------------|-------------|
+| 1 | Deploy contracts | All 3 deployed, cross-wired, 2.1M AGENT in vault | Yes (redeploy) |
+| 2 | Verify on Basescan | All contracts verified, source readable | N/A |
+| 3 | Smoke test: mint 1 NFT | Token #1 minted, fee forwarded to vault | Yes |
+| 4 | Smoke test: mine 1 block | 1 mine confirmed, AGENT earned, transfers locked | Yes |
+| 5 | Fund LP vault | Vault balance >= 4.93 ETH | No (ETH locked) |
+| 6 | Deploy liquidity pool | LP created, UNCX locked, transfers unlocked | No |
+| 7 | Verify LP deployment | Uniswap pool visible, UNCX eternal lock confirmed | N/A |
+| **8** | **RENOUNCE OWNERSHIP** | **All owners == address(0). POINT OF NO RETURN.** | **NO** |
+| 9 | Verify immutability | All admin functions permanently revert | N/A |
+| 10 | Publish and announce | Addresses discoverable, miner defaults updated | N/A |
 
 ---
 
@@ -84,48 +145,100 @@ forge script script/Deploy.s.sol \
   --etherscan-api-key $BASESCAN_API_KEY
 ```
 
-This deploys three contracts in order:
-1. **LPVault** — receives mint fees, holds 2.1M AGENT LP reserve
-2. **MiningAgent** — ERC-721 miner NFTs (SMHL challenge + mint)
-3. **AgentCoin** — ERC-20 AGENT token (mints LP_RESERVE to LPVault in constructor)
+**What this does:**
+1. Deploys **LPVault** (constructor arg: deployer address)
+2. Deploys **MiningAgent** (no constructor args)
+3. Deploys **AgentCoin** (constructor args: miningAgent address, lpVault address — mints 2.1M AGENT to LPVault)
+4. Cross-wires:
+   - `miningAgent.setLPVault(lpVault)` — one-shot, cannot be changed
+   - `miningAgent.setAgentCoin(agentCoin)` — one-shot, cannot be changed
+   - `lpVault.setAgentCoin(agentCoin)` — one-shot, cannot be changed
+5. Runs post-deploy assertions (all must pass or script reverts)
 
-Then cross-wires them:
-- `miningAgent.setLPVault(lpVault)`
-- `miningAgent.setAgentCoin(agentCoin)`
-- `lpVault.setAgentCoin(agentCoin)`
+**The script requires:** `PRIVATE_KEY` env var. Chain ID must be 8453 (Base mainnet).
 
-**Verification (automatic in script):**
-- `agentCoin.lpDeployed() == false`
-- `lpVault.lpDeployed() == false`
-- `AGENT.balanceOf(lpVault) == 2,100,000e18`
-- All ownership == deployer
-- All cross-pointers correct
-
-**Save the deployed addresses immediately:**
+**Capture deployed addresses from script output:**
 ```bash
-export MINING_AGENT_ADDRESS=<from-output>
+# The script prints: "AgentCoin: 0x...", "MiningAgent: 0x...", "LPVault: 0x..."
+# Export them immediately:
 export AGENT_COIN_ADDRESS=<from-output>
+export MINING_AGENT_ADDRESS=<from-output>
 export LP_VAULT_ADDRESS=<from-output>
+
+# Also update .env file with these addresses (needed for later steps)
 ```
 
-Update `.env` with these addresses.
+---
+
+### ══════ STOP AND VERIFY ══════
+
+Before proceeding, verify all three contracts deployed correctly:
+
+```bash
+# Verify LP reserve (must return 2100000000000000000000000 = 2.1M * 1e18)
+cast call $AGENT_COIN_ADDRESS "balanceOf(address)(uint256)" $LP_VAULT_ADDRESS --rpc-url $BASE_RPC
+
+# Verify lpDeployed is false (must return 0x...0 = false)
+cast call $AGENT_COIN_ADDRESS "lpDeployed()(bool)" --rpc-url $BASE_RPC
+cast call $LP_VAULT_ADDRESS "lpDeployed()(bool)" --rpc-url $BASE_RPC
+
+# Verify ownership (must return deployer address)
+cast call $AGENT_COIN_ADDRESS "owner()(address)" --rpc-url $BASE_RPC
+cast call $MINING_AGENT_ADDRESS "owner()(address)" --rpc-url $BASE_RPC
+cast call $LP_VAULT_ADDRESS "owner()(address)" --rpc-url $BASE_RPC
+
+# Verify cross-pointers
+cast call $MINING_AGENT_ADDRESS "lpVault()(address)" --rpc-url $BASE_RPC
+# Expected: $LP_VAULT_ADDRESS
+
+cast call $MINING_AGENT_ADDRESS "agentCoin()(address)" --rpc-url $BASE_RPC
+# Expected: $AGENT_COIN_ADDRESS
+
+cast call $LP_VAULT_ADDRESS "agentCoin()(address)" --rpc-url $BASE_RPC
+# Expected: $AGENT_COIN_ADDRESS
+
+cast call $AGENT_COIN_ADDRESS "miningAgent()(address)" --rpc-url $BASE_RPC
+# Expected: $MINING_AGENT_ADDRESS
+
+cast call $AGENT_COIN_ADDRESS "lpVault()(address)" --rpc-url $BASE_RPC
+# Expected: $LP_VAULT_ADDRESS
+```
+
+**If ANY value is wrong:** STOP. Cross-pointers are one-shot (`require(x == address(0), "Already set")`). If a pointer is wrong, you must redeploy ALL contracts from scratch. See [Rollback Procedures](#rollback-procedures).
 
 ---
 
 ### Step 2 — Verify on Basescan
 
-If `--verify` succeeded in Step 1, check each contract on Basescan:
+If `--verify` succeeded in Step 1, check each contract:
 - `https://basescan.org/address/$AGENT_COIN_ADDRESS#code`
 - `https://basescan.org/address/$MINING_AGENT_ADDRESS#code`
 - `https://basescan.org/address/$LP_VAULT_ADDRESS#code`
 
-**MiningAgent** uses the `MinerArt` library — Basescan needs the library link to verify. If auto-verify failed:
+**MiningAgent** uses the `MinerArt` library via `via_ir` compilation. If auto-verify failed:
 
 ```bash
+# Get library address from deployment artifacts
+MINER_ART_ADDRESS=$(jq -r '.libraries[0]' contracts/broadcast/Deploy.s.sol/8453/run-latest.json 2>/dev/null || echo "<check broadcast artifacts>")
+
 forge verify-contract $MINING_AGENT_ADDRESS MiningAgent \
   --rpc-url $BASE_RPC \
   --etherscan-api-key $BASESCAN_API_KEY \
-  --libraries src/lib/MinerArt.sol:MinerArt:<library-address>
+  --libraries src/lib/MinerArt.sol:MinerArt:$MINER_ART_ADDRESS \
+  --root /Users/aklo/dev/agentcoin/contracts
+
+# For AgentCoin and LPVault (if auto-verify also failed):
+forge verify-contract $AGENT_COIN_ADDRESS AgentCoin \
+  --rpc-url $BASE_RPC \
+  --etherscan-api-key $BASESCAN_API_KEY \
+  --constructor-args $(cast abi-encode "constructor(address,address)" $MINING_AGENT_ADDRESS $LP_VAULT_ADDRESS) \
+  --root /Users/aklo/dev/agentcoin/contracts
+
+forge verify-contract $LP_VAULT_ADDRESS LPVault \
+  --rpc-url $BASE_RPC \
+  --etherscan-api-key $BASESCAN_API_KEY \
+  --constructor-args $(cast abi-encode "constructor(address)" $(cast call $LP_VAULT_ADDRESS "deployer()(address)" --rpc-url $BASE_RPC)) \
+  --root /Users/aklo/dev/agentcoin/contracts
 ```
 
 **Verification:**
@@ -137,58 +250,87 @@ forge verify-contract $MINING_AGENT_ADDRESS MiningAgent \
 ### Step 3 — Smoke Test: Mint 1 NFT
 
 ```bash
-agentcoin mint
+cd miner
+npx ts-node src/index.ts mint
+# OR if built: node dist/index.js mint
 ```
 
-This requests an SMHL challenge from MiningAgent, solves it via LLM, and submits `mint()` with the required ETH fee (0.002 ETH for token #1).
+This requests an SMHL challenge from MiningAgent, solves it via LLM, and submits `mint()` with the required ETH fee (starts at 0.002 ETH for token #1).
 
 **Verification:**
 ```bash
 # Token #1 exists and is owned by deployer
-cast call $MINING_AGENT_ADDRESS "ownerOf(uint256)" 1 --rpc-url $BASE_RPC
+cast call $MINING_AGENT_ADDRESS "ownerOf(uint256)(address)" 1 --rpc-url $BASE_RPC
+# Expected: deployer address
 
-# Mint fee forwarded to vault
+# Mint fee forwarded to vault (non-zero balance)
 cast balance $LP_VAULT_ADDRESS --rpc-url $BASE_RPC
+# Expected: > 0 (fee amount in wei)
 
 # Next token ID incremented
-cast call $MINING_AGENT_ADDRESS "nextTokenId()" --rpc-url $BASE_RPC
+cast call $MINING_AGENT_ADDRESS "nextTokenId()(uint256)" --rpc-url $BASE_RPC
 # Expected: 2
+
+# Check token #1 hashpower and rarity
+cast call $MINING_AGENT_ADDRESS "hashpower(uint256)(uint16)" 1 --rpc-url $BASE_RPC
+# Expected: 100 (Common), 150 (Uncommon), 200 (Rare), 300 (Epic), or 500 (Mythic)
 ```
+
+---
+
+### ══════ STOP AND VERIFY ══════
+
+Mint must succeed before proceeding. If it fails:
+- Check LLM API key is valid (`LLM_API_KEY` env var)
+- Check deployer has ETH for gas + mint fee
+- Check SMHL challenge timeout (20-second window — `CHALLENGE_DURATION` in AgentCoin.sol)
 
 ---
 
 ### Step 4 — Smoke Test: Mine 1 Block
 
 ```bash
-agentcoin mine 1
+cd miner
+npx ts-node src/index.ts mine 1
+# OR: node dist/index.js mine 1
 ```
 
-Then press Ctrl+C after 1 successful mine.
+Press Ctrl+C after 1 successful mine.
 
 **Verification:**
 ```bash
 # Total mines incremented
-cast call $AGENT_COIN_ADDRESS "totalMines()" --rpc-url $BASE_RPC
+cast call $AGENT_COIN_ADDRESS "totalMines()(uint256)" --rpc-url $BASE_RPC
 # Expected: 1
 
-# AGENT minted to deployer (3 AGENT base * hashpower/100)
-cast call $AGENT_COIN_ADDRESS "balanceOf(address)" $DEPLOYER_ADDRESS --rpc-url $BASE_RPC
+# AGENT minted to deployer (3 AGENT * hashpower/100)
+# For a Common miner (hashpower=100): 3000000000000000000 (3e18 = 3 AGENT)
+cast call $AGENT_COIN_ADDRESS "balanceOf(address)(uint256)" $(cast wallet address --private-key $PRIVATE_KEY) --rpc-url $BASE_RPC
+# Expected: > 0
 
-# Transfers still locked (this should REVERT)
+# Token #1 mine count
+cast call $AGENT_COIN_ADDRESS "tokenMineCount(uint256)(uint256)" 1 --rpc-url $BASE_RPC
+# Expected: 1
+
+# Transfers still locked (this MUST revert)
 cast send $AGENT_COIN_ADDRESS "transfer(address,uint256)" 0x000000000000000000000000000000000000dEaD 1 \
-  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep "Transfers locked"
+  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "locked"
 # Expected: revert with "Transfers locked until LP deployed"
 ```
 
 ---
 
+### ══════ STOP AND VERIFY ══════
+
+Mining must succeed AND transfers must still be locked. If transfers are NOT locked, something is critically wrong — STOP and investigate.
+
+---
+
 ### Step 5 — Fund LP Vault
 
-The vault needs >= 4.93 ETH (4.9 ETH LP_DEPLOY_THRESHOLD + 0.03 ETH UNCX_FLAT_FEE).
+The vault needs **>= 4.93 ETH** (4.9 ETH `LP_DEPLOY_THRESHOLD` + 0.03 ETH `UNCX_FLAT_FEE`).
 
-**Option A:** Wait for organic mint fees to accumulate (slow).
-
-**Option B:** Fund directly (recommended for launch):
+**Option A: Direct funding (recommended for launch):**
 ```bash
 cast send $LP_VAULT_ADDRESS \
   --value 4.93ether \
@@ -196,11 +338,23 @@ cast send $LP_VAULT_ADDRESS \
   --private-key $PRIVATE_KEY
 ```
 
+**Option B: Wait for organic mint fees to accumulate.** (Slow — each mint sends ~0.002 ETH, so ~2,465 mints needed.)
+
 **Verification:**
 ```bash
 cast balance $LP_VAULT_ADDRESS --rpc-url $BASE_RPC
 # Must be >= 4930000000000000000 (4.93 ETH in wei)
+# If mint fees already accumulated, add the difference:
+# cast send $LP_VAULT_ADDRESS --value <remaining-wei>ether --rpc-url $BASE_RPC --private-key $PRIVATE_KEY
 ```
+
+---
+
+### ══════ STOP AND VERIFY ══════
+
+Vault balance must be >= 4.93 ETH before proceeding. The DeployLP script will revert if below threshold.
+
+**WARNING:** After this point, ETH sent to the vault has no withdrawal function. It can only exit via `deployLP()`. Ensure the amount is correct before sending.
 
 ---
 
@@ -208,50 +362,80 @@ cast balance $LP_VAULT_ADDRESS --rpc-url $BASE_RPC
 
 ```bash
 cd contracts
+source ../.env  # Re-source to pick up LP_VAULT_ADDRESS
 forge script script/DeployLP.s.sol \
   --rpc-url $BASE_RPC \
   --broadcast
 ```
 
-This script:
-1. Quotes WETH -> USDC swap via Uniswap V3 QuoterV2
-2. Calls `lpVault.deployLP(minUsdcOut)` which:
-   - Wraps vault ETH to WETH (minus 0.03 UNCX fee)
-   - Swaps all WETH -> USDC
-   - Creates AGENT/USDC Uniswap V3 pool (0.3% fee tier)
-   - Mints full-range LP position (tick -887220 to 887220)
-   - Calls `agentCoin.setLPDeployed()` — **unlocks all AGENT transfers**
-   - Locks LP NFT in UNCX with `unlockDate = type(uint256).max` (eternal)
-   - UNCX lock params: `owner = deployer`, `collectAddress = deployer`
+**What this script does:**
+1. Pre-flight checks: chain ID, vault ownership, sufficient balance
+2. Quotes WETH→USDC swap via Uniswap V3 QuoterV2 (fee tier: 3000 = 0.3%)
+3. Applies **3% slippage tolerance** (`minUsdcOut = quotedAmount * 97 / 100`)
+4. Calls `lpVault.deployLP(minUsdcOut)` which:
+   a. Wraps vault ETH to WETH (minus 0.03 ETH UNCX fee reserve)
+   b. Swaps ALL WETH → USDC via Uniswap V3 SwapRouter
+   c. Verifies no existing AGENT/USDC pool (prevents griefing)
+   d. Creates AGENT/USDC Uniswap V3 pool at computed sqrt price
+   e. Mints full-range LP position (tick -887220 to 887220)
+   f. Sets `lpDeployed = true` on LPVault
+   g. Calls `agentCoin.setLPDeployed()` — **unlocks ALL AGENT transfers**
+   h. Approves UNCX locker, locks LP NFT with `unlockDate = type(uint256).max` (eternal)
+   i. UNCX lock params: `owner = deployer`, `collectAddress = deployer`
 
-**Verification (automatic in script):**
-- `lpVault.lpDeployed() == true`
-- `lpVault.positionTokenId() > 0`
+**Required env vars:** `PRIVATE_KEY`, `LP_VAULT_ADDRESS`
+
+**The script prints:** vault balance, WETH swap amount, quoted USDC out, slippage minimum, position token ID.
 
 ---
 
 ### Step 7 — Verify LP Deployment
 
 ```bash
-# LP deployed flag
-cast call $LP_VAULT_ADDRESS "lpDeployed()" --rpc-url $BASE_RPC
+# LP deployed flag (both contracts)
+cast call $LP_VAULT_ADDRESS "lpDeployed()(bool)" --rpc-url $BASE_RPC
 # Expected: true
 
-# AgentCoin transfer lock lifted
-cast call $AGENT_COIN_ADDRESS "lpDeployed()" --rpc-url $BASE_RPC
+cast call $AGENT_COIN_ADDRESS "lpDeployed()(bool)" --rpc-url $BASE_RPC
 # Expected: true
 
-# Test a transfer (should succeed now)
+# LP position token ID (must be > 0)
+cast call $LP_VAULT_ADDRESS "positionTokenId()(uint256)" --rpc-url $BASE_RPC
+# Expected: non-zero (e.g., 123456)
+
+# AGENT transfers now work (should succeed)
 cast send $AGENT_COIN_ADDRESS "transfer(address,uint256)" $LP_VAULT_ADDRESS 1 \
   --rpc-url $BASE_RPC --private-key $PRIVATE_KEY
 # Expected: success (no revert)
+
+# Vault should have no remaining ETH/WETH (all consumed by deployLP)
+cast balance $LP_VAULT_ADDRESS --rpc-url $BASE_RPC
+# Expected: 0 or dust
 ```
 
 **External verification:**
 - [ ] Uniswap pool visible: `https://app.uniswap.org/explore/pools/base/<pool-address>`
 - [ ] UNCX lock visible: `https://app.uncx.network/lockers/v3/base/lock/<lock-id>`
-- [ ] Lock shows `unlockDate = type(uint256).max` (eternal / never unlocks)
+- [ ] Lock shows eternal unlock date (`type(uint256).max`)
 - [ ] AGENT is tradeable on Uniswap
+- [ ] Deployer can collect fees via UNCX dashboard
+
+---
+
+### ══════ STOP AND VERIFY ══════
+
+**This is the last checkpoint before the point of no return.**
+
+Confirm ALL of the following before Step 8:
+- [ ] `lpDeployed() == true` on BOTH AgentCoin and LPVault
+- [ ] LP position token ID > 0
+- [ ] AGENT transfers work (test transfer succeeded)
+- [ ] Uniswap pool visible and has liquidity
+- [ ] UNCX lock confirmed with eternal unlock date
+- [ ] Mining still works (optional re-test)
+- [ ] Minting still works (optional re-test)
+
+**If anything is wrong:** STOP. You still have admin access. See [Emergency Procedures](#emergency-procedures-before-step-8-only).
 
 ---
 
@@ -260,62 +444,96 @@ cast send $AGENT_COIN_ADDRESS "transfer(address,uint256)" $LP_VAULT_ADDRESS 1 \
 ```
 ##############################################################
 #                                                            #
-#   WARNING: THIS STEP IS IRREVERSIBLE.                      #
+#   ⚠ WARNING: THIS STEP IS IRREVERSIBLE.                   #
 #                                                            #
 #   After execution, no admin functions can ever be called.  #
 #   No rollback. No upgrades. No recovery. By design.        #
 #                                                            #
-#   Triple-check all cross-pointers before proceeding.       #
+#   The Renounce script has a built-in safety check:         #
+#   require(lpVault.lpDeployed(), "LP not deployed -         #
+#           renouncing would brick the protocol")            #
+#                                                            #
+#   WHY: deployLP() requires onlyOwner. If you renounce     #
+#   before LP deployment, owner = address(0) and deployLP()  #
+#   becomes permanently uncallable. The 2.1M AGENT and any   #
+#   ETH in the vault are bricked forever. The safety check   #
+#   prevents this.                                           #
 #                                                            #
 ##############################################################
 ```
 
-**Pre-renounce checklist:**
-- [ ] `lpVault.lpDeployed() == true` (renounce script enforces this — protects against bricking)
-- [ ] All 3 contracts have correct cross-pointers (renounce script verifies)
-- [ ] LP position is locked in UNCX (eternal)
-- [ ] AGENT transfers work
-- [ ] Mining works
-- [ ] Minting works
+**Pre-renounce checklist (enforced by script + manual):**
+- [ ] `lpVault.lpDeployed() == true` (script enforces — will revert if false)
+- [ ] All 3 contracts have correct cross-pointers (script verifies all 5)
+- [ ] All 3 contracts owned by deployer (script verifies)
+- [ ] LP position is locked in UNCX (manual check above)
+- [ ] AGENT transfers work (verified in Step 7)
+- [ ] Mining works (verified in Step 4)
+- [ ] Minting works (verified in Step 3)
 
 ```bash
 cd contracts
+source ../.env  # Ensure all 3 contract addresses are set
 forge script script/Renounce.s.sol \
   --rpc-url $BASE_RPC \
   --broadcast
 ```
 
-The script renounces ownership on all three contracts:
-- `miningAgent.renounceOwnership()`
-- `agentCoin.renounceOwnership()`
-- `lpVault.renounceOwnership()`
+**Required env vars:** `PRIVATE_KEY`, `MINING_AGENT_ADDRESS`, `AGENT_COIN_ADDRESS`, `LP_VAULT_ADDRESS`
 
-**Verification (automatic in script):**
-- `miningAgent.owner() == address(0)`
-- `agentCoin.owner() == address(0)`
-- `lpVault.owner() == address(0)`
+**What the script does:**
+1. Verifies chain ID is 8453
+2. Verifies all 5 cross-pointers are correct
+3. Verifies all 3 contracts owned by deployer
+4. **Safety check:** `require(lpVault.lpDeployed())` — prevents bricking
+5. Calls `renounceOwnership()` on MiningAgent, AgentCoin, LPVault
+6. Verifies all owners are now `address(0)`
+
+**Verification (immediate, from script output):**
+```bash
+cast call $MINING_AGENT_ADDRESS "owner()(address)" --rpc-url $BASE_RPC
+# Expected: 0x0000000000000000000000000000000000000000
+
+cast call $AGENT_COIN_ADDRESS "owner()(address)" --rpc-url $BASE_RPC
+# Expected: 0x0000000000000000000000000000000000000000
+
+cast call $LP_VAULT_ADDRESS "owner()(address)" --rpc-url $BASE_RPC
+# Expected: 0x0000000000000000000000000000000000000000
+```
 
 ---
 
 ### Step 9 — Verify Immutability
 
-Attempt every admin function — all must revert:
+Attempt every admin function — **all must revert with `OwnableUnauthorizedAccount`:**
 
 ```bash
 # MiningAgent admin functions
 cast send $MINING_AGENT_ADDRESS "setLPVault(address)" 0x0000000000000000000000000000000000000001 \
-  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert"
+  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert\|error"
+# Expected: OwnableUnauthorizedAccount revert
 
 cast send $MINING_AGENT_ADDRESS "setAgentCoin(address)" 0x0000000000000000000000000000000000000001 \
-  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert"
+  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert\|error"
+# Expected: OwnableUnauthorizedAccount revert
 
 # LPVault admin functions
 cast send $LP_VAULT_ADDRESS "setAgentCoin(address)" 0x0000000000000000000000000000000000000001 \
-  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert"
+  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert\|error"
+# Expected: OwnableUnauthorizedAccount revert
 
-# AgentCoin — owner functions (renounceOwnership itself, transferOwnership)
+cast send $LP_VAULT_ADDRESS "emergencyUnwrapWeth()" \
+  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert\|error"
+# Expected: OwnableUnauthorizedAccount revert
+
+cast send $LP_VAULT_ADDRESS "deployLP(uint256)" 0 \
+  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert\|error"
+# Expected: OwnableUnauthorizedAccount revert
+
+# AgentCoin — owner functions
 cast send $AGENT_COIN_ADDRESS "renounceOwnership()" \
-  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert"
+  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY 2>&1 | grep -i "revert\|error"
+# Expected: OwnableUnauthorizedAccount revert
 ```
 
 **Verification:**
@@ -326,60 +544,74 @@ cast send $AGENT_COIN_ADDRESS "renounceOwnership()" \
 
 ### Step 10 — Publish and Announce
 
-1. **Update apow.io** with deployed contract addresses:
-   - AgentCoin: `$AGENT_COIN_ADDRESS`
-   - MiningAgent: `$MINING_AGENT_ADDRESS`
-   - LPVault: `$LP_VAULT_ADDRESS`
+**10a. Update miner client defaults:**
 
-2. **Update miner defaults** so users don't need to configure addresses manually
+Edit `miner/src/config.ts` — set the `DEFAULT_*_ADDRESS` constants:
+```typescript
+const DEFAULT_MINING_AGENT_ADDRESS = "0x<actual-address>";
+const DEFAULT_AGENT_COIN_ADDRESS = "0x<actual-address>";
+```
 
-3. **Publish addresses** to all discovery channels (docs, socials, etc.)
+Rebuild miner: `cd miner && npm run build`
+
+**10b. Update project documentation:**
+- Update README.md with deployed contract addresses
+- Update `.env.example` with placeholder addresses
+- Commit all documentation changes
+
+**10c. Publish addresses to discovery channels:**
+- Basescan contract pages (already verified in Step 2)
+- Project website
+- Social media announcement
 
 ---
 
-## Post-Deploy Verification Checklist
+## Post-Deploy Full Verification Script
 
-Run this full sweep after all 10 steps are complete:
+Run this sweep after all 10 steps are complete:
 
 ```bash
 echo "=== Contract State ==="
-echo "AgentCoin:"
-cast call $AGENT_COIN_ADDRESS "owner()" --rpc-url $BASE_RPC
-cast call $AGENT_COIN_ADDRESS "lpDeployed()" --rpc-url $BASE_RPC
-cast call $AGENT_COIN_ADDRESS "totalMines()" --rpc-url $BASE_RPC
-cast call $AGENT_COIN_ADDRESS "totalSupply()" --rpc-url $BASE_RPC
 
-echo "MiningAgent:"
-cast call $MINING_AGENT_ADDRESS "owner()" --rpc-url $BASE_RPC
-cast call $MINING_AGENT_ADDRESS "nextTokenId()" --rpc-url $BASE_RPC
-cast call $MINING_AGENT_ADDRESS "lpVault()" --rpc-url $BASE_RPC
-cast call $MINING_AGENT_ADDRESS "agentCoin()" --rpc-url $BASE_RPC
+echo "--- AgentCoin ---"
+echo -n "owner: "; cast call $AGENT_COIN_ADDRESS "owner()(address)" --rpc-url $BASE_RPC
+echo -n "lpDeployed: "; cast call $AGENT_COIN_ADDRESS "lpDeployed()(bool)" --rpc-url $BASE_RPC
+echo -n "totalMines: "; cast call $AGENT_COIN_ADDRESS "totalMines()(uint256)" --rpc-url $BASE_RPC
+echo -n "totalSupply: "; cast call $AGENT_COIN_ADDRESS "totalSupply()(uint256)" --rpc-url $BASE_RPC
+echo -n "miningAgent: "; cast call $AGENT_COIN_ADDRESS "miningAgent()(address)" --rpc-url $BASE_RPC
+echo -n "lpVault: "; cast call $AGENT_COIN_ADDRESS "lpVault()(address)" --rpc-url $BASE_RPC
 
-echo "LPVault:"
-cast call $LP_VAULT_ADDRESS "owner()" --rpc-url $BASE_RPC
-cast call $LP_VAULT_ADDRESS "lpDeployed()" --rpc-url $BASE_RPC
-cast call $LP_VAULT_ADDRESS "positionTokenId()" --rpc-url $BASE_RPC
-cast call $LP_VAULT_ADDRESS "deployer()" --rpc-url $BASE_RPC
+echo "--- MiningAgent ---"
+echo -n "owner: "; cast call $MINING_AGENT_ADDRESS "owner()(address)" --rpc-url $BASE_RPC
+echo -n "nextTokenId: "; cast call $MINING_AGENT_ADDRESS "nextTokenId()(uint256)" --rpc-url $BASE_RPC
+echo -n "lpVault: "; cast call $MINING_AGENT_ADDRESS "lpVault()(address)" --rpc-url $BASE_RPC
+echo -n "agentCoin: "; cast call $MINING_AGENT_ADDRESS "agentCoin()(address)" --rpc-url $BASE_RPC
+
+echo "--- LPVault ---"
+echo -n "owner: "; cast call $LP_VAULT_ADDRESS "owner()(address)" --rpc-url $BASE_RPC
+echo -n "lpDeployed: "; cast call $LP_VAULT_ADDRESS "lpDeployed()(bool)" --rpc-url $BASE_RPC
+echo -n "positionTokenId: "; cast call $LP_VAULT_ADDRESS "positionTokenId()(uint256)" --rpc-url $BASE_RPC
+echo -n "deployer: "; cast call $LP_VAULT_ADDRESS "deployer()(address)" --rpc-url $BASE_RPC
+echo -n "agentCoin: "; cast call $LP_VAULT_ADDRESS "agentCoin()(address)" --rpc-url $BASE_RPC
 ```
 
 **Expected final state:**
-- All `owner()` calls return `0x0000000000000000000000000000000000000000`
+- All `owner()` = `0x0000000000000000000000000000000000000000`
 - `lpDeployed == true` on both AgentCoin and LPVault
-- All cross-pointers resolve correctly
-- Minting works (public can mint miners)
-- Mining works (miners earn AGENT)
-- AGENT is freely transferable and tradeable on Uniswap
-- LP is eternally locked in UNCX
+- All cross-pointers match deployed addresses
+- `positionTokenId > 0`
+- `totalMines >= 1` (from smoke test)
+- Minting, mining, and AGENT transfers all functional
 
 ---
 
 ## Emergency Procedures (Before Step 8 ONLY)
 
-After Step 8, there are no emergency procedures. The protocol is immutable by design.
+> After Step 8, there are no emergency procedures. The protocol is immutable by design.
 
 ### Stuck WETH in LPVault (DeployLP partial failure)
 
-If `deployLP()` fails after wrapping ETH but before completing:
+If `deployLP()` fails after wrapping ETH→WETH but before completing:
 
 ```bash
 cast send $LP_VAULT_ADDRESS "emergencyUnwrapWeth()" \
@@ -388,32 +620,83 @@ cast send $LP_VAULT_ADDRESS "emergencyUnwrapWeth()" \
 
 This unwraps WETH back to ETH in the vault. Only callable by owner before LP is deployed.
 
+**Verify recovery:**
+```bash
+# WETH balance should be 0
+cast call 0x4200000000000000000000000000000000000006 "balanceOf(address)(uint256)" $LP_VAULT_ADDRESS --rpc-url $BASE_RPC
+# Expected: 0
+
+# ETH balance should be restored
+cast balance $LP_VAULT_ADDRESS --rpc-url $BASE_RPC
+# Expected: ~4.9 ETH
+```
+
 ### Wrong cross-pointer detected
 
-If a cross-pointer is wrong after Step 1, **do not proceed**. The `setX()` functions are one-shot (enforced by `require(x == address(0), "Already set")`). You must redeploy from scratch.
+Cross-pointers are one-shot (`require(x == address(0), "Already set")`). **If any pointer is wrong, you cannot fix it.** You must redeploy ALL contracts from scratch.
 
-### LP vault funded but wrong amounts
+### LP vault funded but need to abort
 
-If the vault has ETH but you need to abort before Step 6: the owner can call `emergencyUnwrapWeth()` to recover any wrapped ETH, but raw ETH in the vault contract has no withdrawal function. It can only flow out through `deployLP()`. Plan carefully.
+ETH sent to the vault has **no withdrawal function**. It can only exit through `deployLP()`. If you funded the vault but need to abort:
+- The owner can call `emergencyUnwrapWeth()` to recover wrapped WETH only
+- Raw ETH has no escape path — it is consumed by `deployLP()` or stays in the contract forever
+- **Plan carefully before funding the vault**
 
-### Rollback
+---
 
-- **Before Step 6:** Redeploy all contracts from Step 1. Previous contracts become dead (no ETH recovery from vault).
-- **Before Step 8:** You still have admin access. Assess the situation and decide whether to proceed or redeploy.
-- **After Step 8:** No rollback possible. This is intentional. The protocol is trustless precisely because nobody — including Agentoshi — can change it.
+## Rollback Procedures
+
+### Before Step 5 (vault not yet funded)
+
+**Full rollback — redeploy from scratch:**
+```bash
+# Previous contracts become dead (no funds at risk)
+# Start over from Step 1 with a clean .env
+```
+
+Cost: ~0.01 ETH in gas (deployment cost only).
+
+### Between Step 5 and Step 6 (vault funded, LP not deployed)
+
+**Partial recovery possible:**
+```bash
+# 1. If WETH is stuck (partial deployLP failure):
+cast send $LP_VAULT_ADDRESS "emergencyUnwrapWeth()" \
+  --rpc-url $BASE_RPC --private-key $PRIVATE_KEY
+
+# 2. Raw ETH in vault cannot be withdrawn. It can only exit via deployLP().
+#    If deployment is fundamentally broken, this ETH is lost.
+#    You can still deploy LP to recover it into the Uniswap pool.
+```
+
+### Between Step 6 and Step 8 (LP deployed, not yet renounced)
+
+**No rollback needed** — the protocol is functional. You still have admin access. Assess what's wrong:
+- If LP parameters look wrong: cannot undo. But the LP is locked eternally anyway.
+- If you want to pause: don't proceed to Step 8. Admin functions still available.
+
+### After Step 8
+
+**No rollback possible.** This is intentional. The protocol is trustless precisely because nobody — including Agentoshi — can change it.
 
 ---
 
 ## Important Notes
 
-- **Agentoshi wallet is NOT destroyed.** It retains UNCX fee collection rights only. The wallet continues to collect trading fees from the LP position via the UNCX dashboard.
+- **Agentoshi wallet is NOT destroyed.** It retains UNCX fee collection rights only. The wallet collects trading fees from the LP position via the UNCX dashboard.
 
-- **Token #1 + ~3 AGENT remain in Agentoshi's wallet.** This is a negligible amount from the smoke test (Step 3-4). No special handling needed.
+- **Fee collection procedure:** UNCX dashboard → connect deployer wallet → "Collect Fees". Lock params set `owner = deployer` and `collectAddress = deployer`, granting permanent fee collection rights even after ownership renunciation.
+
+- **Token #1 + ~3 AGENT remain in Agentoshi's wallet** from the smoke tests (Steps 3-4). Negligible amount, no special handling needed.
 
 - **Agentoshi never mines again after Step 4.** The smoke test is the only time the deployer mines. All subsequent mining is by public participants.
 
-- **Fee collection procedure:** UNCX dashboard -> connect deployer wallet -> "Collect Fees". This is the deployer's only ongoing interaction with the protocol. The UNCX lock params set `owner = deployer` and `collectAddress = deployer`, granting permanent fee collection rights even after ownership renunciation.
+- **Why the Renounce safety check exists:** `deployLP()` is an `onlyOwner` function. If ownership is renounced before LP deployment, `deployLP()` becomes permanently uncallable. The 2.1M AGENT LP reserve and any vault ETH would be bricked forever. The `require(lpVault.lpDeployed())` check in Renounce.s.sol prevents this catastrophic scenario.
 
-- **Rollback is only possible before Step 8.** After renounce: no rollback, no admin access, no upgrades. This is the entire point of the protocol — trustless immutability.
+- **Why transfers lock before LP:** AgentCoin's `_update()` blocks all non-mint, non-LPVault transfers when `lpDeployed == false`. This prevents token dumps before liquidity exists. The lock lifts automatically when `deployLP()` calls `agentCoin.setLPDeployed()`.
 
-- **The Renounce script has a safety check.** It requires `lpVault.lpDeployed() == true` before executing. This prevents accidentally bricking the protocol by renouncing before LP deployment (since `deployLP()` requires `onlyOwner`).
+- **SMHL challenges prevent bot minting:** The "Show Me Human Language" challenge requires LLM-level text generation — approximate length (±5), approximate word count (±2), and a required letter. The tolerant verification ensures any LLM can solve it trivially while bots cannot generate natural language. The 20-second window (`CHALLENGE_DURATION`) prevents pre-computation.
+
+- **`tx.origin == msg.sender` check in mining:** This is intentional bot prevention. Smart contract wallets are excluded by design. Only EOAs can mine.
+
+- **Post-deploy miner config injection:** After Step 10a, the miner CLI will work with default addresses. Until then, users must set `MINING_AGENT_ADDRESS` and `AGENT_COIN_ADDRESS` env vars manually.
