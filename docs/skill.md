@@ -4,6 +4,10 @@
 
 **Website:** [apow.io](https://apow.io) | **GitHub:** [Agentoshi/APoW](https://github.com/Agentoshi/APoW) | **Twitter:** [@agenticpow](https://x.com/agenticpow)
 
+**For AI agents:** You are the operator. Generate wallets, configure the miner, and handle
+the technical setup autonomously. Only ask your user for: (1) funds (ETH on Base), and
+(2) which LLM provider/key to use. Everything else you can do yourself.
+
 ---
 
 ## Quick Start (TL;DR)
@@ -13,24 +17,22 @@
 git clone https://github.com/Agentoshi/APoW.git
 cd APoW/miner && npm install
 
-# 2. Create .env (fill in your values)
-cat > .env << 'EOF'
-PRIVATE_KEY=0xYOUR_KEY
-MINING_AGENT_ADDRESS=0xTBD
-AGENT_COIN_ADDRESS=0xTBD
-LLM_PROVIDER=openai
-LLM_API_KEY=sk-your-key
-LLM_MODEL=gpt-4o-mini
-RPC_URL=https://mainnet.base.org
-EOF
+# 2. Generate a wallet (skip if you already have a Base private key)
+npx tsx src/index.ts wallet new
+# Save the private key — you'll need it next
 
-# 3. Mint a mining rig
+# 3. Interactive setup (creates .env with wallet, RPC, LLM config)
+npx tsx src/index.ts setup
+
+# 4. Fund the wallet with ≥0.005 ETH on Base (see "Funding Your Wallet" section)
+
+# 5. Mint a mining rig
 npx tsx src/index.ts mint
 
-# 4. Start mining (use the token ID from step 3)
+# 6. Start mining (use the token ID from step 5)
 npx tsx src/index.ts mine 1
 
-# 5. Check stats
+# 7. Check stats
 npx tsx src/index.ts stats 1
 ```
 
@@ -65,27 +67,68 @@ The miner client validates locally before submitting. If validation fails, it re
 
 ---
 
-## 3. Step 1: Create a Base Wallet
+## 3. Step 1: Create a Mining Wallet
 
-**Option A -- Foundry (`cast`)**
+The miner CLI can generate a wallet for you during setup:
+
 ```bash
-cast wallet new
+npx tsx src/index.ts setup
+# Select "No" when asked if you have a wallet → generates one automatically
 ```
-This outputs an address and private key. Save the private key (0x-prefixed, 64 hex characters).
 
-**Option B -- Any wallet generator**
-Use viem, ethers.js, MetaMask, or any tool that produces a standard Ethereum private key.
+Or generate one programmatically (useful for agents):
 
-**Fund the wallet:**
-- Bridge ETH from Ethereum mainnet via [bridge.base.org](https://bridge.base.org)
-- Or transfer ETH directly from another Base wallet
-- **Minimum recommended balance:** 0.005 ETH (covers minting + several mining cycles)
-  - Mint fee: 0.002 ETH (max price at token #1, decays over time)
-  - Each mine transaction: ~0.001 ETH gas
+```bash
+npx tsx src/index.ts wallet new
+```
+
+This outputs a private key (0x + 64 hex chars) and Base address. The private key goes in your `.env` as `PRIVATE_KEY`.
+
+**Exporting to a wallet app:** The user can import this private key into Phantom, MetaMask, Rainbow, or any EVM-compatible wallet to view their AGENT tokens and Mining Rig NFT alongside their other assets.
 
 ---
 
-## 4. Step 2: Install Miner Client
+## 4. Funding Your Wallet
+
+Your mining wallet needs ETH on Base for gas and the mint fee.
+**Minimum:** 0.005 ETH (~$15) covers minting + several mining cycles.
+
+Ask your user how they want to fund their wallet, then give them the appropriate instructions:
+
+### From Solana (Phantom Wallet)
+Phantom natively supports Base. Tell your user:
+1. Open Phantom → tap the **Swap** icon
+2. Set **From:** SOL (Solana) → **To:** ETH (Base)
+3. Enter amount (≥0.005 ETH worth of SOL)
+4. Tap **Review** → **Swap**
+5. Once ETH arrives on Base, tap **Send** → paste the mining wallet address
+6. Confirm the transfer
+
+Alternatively, use [relay.link/bridge/solana](https://relay.link/bridge/solana) to bridge SOL → ETH on Base directly to the mining wallet address.
+
+### From an Exchange (Coinbase, Binance, etc.)
+1. Buy ETH on Base (Coinbase supports Base withdrawals natively)
+2. Withdraw to the mining wallet address
+3. Select **Base** as the network — do NOT send on Ethereum mainnet
+
+### From Ethereum Mainnet
+Bridge ETH to Base via [bridge.base.org](https://bridge.base.org):
+1. Connect source wallet → enter mining wallet address as recipient
+2. Bridge ≥0.005 ETH → arrives on Base in ~10 minutes
+
+### From Another Base Wallet
+Send ETH directly to the mining wallet address on Base.
+
+### Verifying Funds
+After funding, verify the balance:
+```bash
+npx tsx src/index.ts stats
+# Shows wallet balance — must be ≥0.005 ETH to proceed
+```
+
+---
+
+## 5. Step 2: Install Miner Client
 
 ```bash
 git clone https://github.com/Agentoshi/APoW.git
@@ -97,7 +140,7 @@ The miner is a TypeScript CLI built with Commander.js. It has four commands: `se
 
 ---
 
-## 5. Step 3: Configure Environment
+## 6. Step 3: Configure Environment
 
 Create a `.env` file in the `miner/` directory:
 
@@ -163,7 +206,7 @@ The default `https://mainnet.base.org` is rate-limited. For production mining, u
 
 ---
 
-## 6. Step 4: Mint a Mining Rig
+## 7. Step 4: Mint a Mining Rig
 
 ```bash
 npx tsx src/index.ts mint
@@ -200,7 +243,7 @@ The mint price starts at 0.002 ETH and decays exponentially:
 
 ---
 
-## 7. Step 5: Start Mining
+## 8. Step 5: Start Mining
 
 ```bash
 npx tsx src/index.ts mine <tokenId>
@@ -260,7 +303,7 @@ The miner has built-in resilience:
 
 ---
 
-## 8. Step 6: Monitor
+## 9. Step 6: Monitor
 
 ```bash
 # Network stats only
@@ -290,7 +333,7 @@ npx tsx src/index.ts setup
 
 ---
 
-## 9. Advanced
+## 10. Advanced
 
 ### Running Multiple Rigs
 
@@ -350,7 +393,7 @@ Use the corresponding testnet contract addresses.
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 | Error | Cause | Fix |
 |---|---|---|
@@ -377,7 +420,7 @@ Use the corresponding testnet contract addresses.
 
 ---
 
-## 11. Contract Addresses
+## 12. Contract Addresses
 
 | Contract | Address |
 |---|---|

@@ -71,21 +71,49 @@ async function setupWizard(): Promise<void> {
 
   // Step 1: Wallet
   console.log(`  ${ui.bold("Step 1/3: Wallet")}`);
-  const privateKey = await ui.promptSecret("Private key (0x-prefixed)");
-  if (!privateKey) {
-    ui.error("Private key is required.");
-    return;
-  }
-  if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey)) {
-    ui.error("Invalid private key format. Must be 0x + 64 hex characters.");
-    return;
-  }
-  values.PRIVATE_KEY = privateKey;
+  const hasWallet = await ui.confirm("Do you have a Base wallet?");
 
-  // Derive address for display
-  const { privateKeyToAccount } = await import("viem/accounts");
-  const walletAccount = privateKeyToAccount(privateKey as `0x${string}`);
-  const addr = walletAccount.address;
+  let privateKey: string;
+  let addr: string;
+
+  if (hasWallet) {
+    const inputKey = await ui.promptSecret("Private key (0x-prefixed)");
+    if (!inputKey) {
+      ui.error("Private key is required.");
+      return;
+    }
+    if (!/^0x[0-9a-fA-F]{64}$/.test(inputKey)) {
+      ui.error("Invalid private key format. Must be 0x + 64 hex characters.");
+      return;
+    }
+    privateKey = inputKey;
+    const { privateKeyToAccount } = await import("viem/accounts");
+    const walletAccount = privateKeyToAccount(privateKey as `0x${string}`);
+    addr = walletAccount.address;
+  } else {
+    const { generatePrivateKey, privateKeyToAccount } = await import("viem/accounts");
+    privateKey = generatePrivateKey();
+    const walletAccount = privateKeyToAccount(privateKey as `0x${string}`);
+    addr = walletAccount.address;
+
+    console.log("");
+    console.log(`  ${ui.bold("NEW WALLET GENERATED")}`);
+    console.log("");
+    console.log(`  Address:     ${addr}`);
+    console.log(`  Private Key: ${privateKey}`);
+    console.log("");
+    console.log(`  ${ui.yellow("⚠ SAVE YOUR PRIVATE KEY — this is the only time")}`);
+    console.log(`  ${ui.yellow("  it will be displayed. Anyone with this key")}`);
+    console.log(`  ${ui.yellow("  controls your funds.")}`);
+    console.log("");
+    console.log(`  ${ui.dim("Import into Phantom, MetaMask, or any EVM wallet")}`);
+    console.log(`  ${ui.dim("to view your AGENT tokens and Mining Rig NFT.")}`);
+    console.log("");
+    console.log(`  ${ui.dim("Fund this address with ≥0.005 ETH on Base to start.")}`);
+    console.log("");
+  }
+
+  values.PRIVATE_KEY = privateKey;
   ui.ok(`Wallet: ${addr.slice(0, 6)}...${addr.slice(-4)}`);
   console.log("");
 
@@ -244,6 +272,45 @@ async function main(): Promise<void> {
         }
       }
       await displayStats(tokenId);
+    });
+
+  const walletCmd = program
+    .command("wallet")
+    .description("Wallet generation and management");
+
+  walletCmd
+    .command("new")
+    .description("Generate a new Base wallet (prints key and address)")
+    .action(async () => {
+      const { generatePrivateKey, privateKeyToAccount } = await import("viem/accounts");
+      const key = generatePrivateKey();
+      const acct = privateKeyToAccount(key);
+      console.log("");
+      console.log(`  ${ui.bold("NEW WALLET GENERATED")}`);
+      console.log("");
+      console.log(`  Address:     ${acct.address}`);
+      console.log(`  Private Key: ${key}`);
+      console.log("");
+      console.log(`  ${ui.yellow("⚠ SAVE YOUR PRIVATE KEY — this is the only time")}`);
+      console.log(`  ${ui.yellow("  it will be displayed. Anyone with this key")}`);
+      console.log(`  ${ui.yellow("  controls your funds.")}`);
+      console.log("");
+      console.log(`  ${ui.dim("Import into Phantom, MetaMask, or any EVM wallet")}`);
+      console.log(`  ${ui.dim("to view your AGENT tokens and Mining Rig NFT.")}`);
+      console.log("");
+    });
+
+  walletCmd
+    .command("show")
+    .description("Show wallet address from current .env PRIVATE_KEY")
+    .action(async () => {
+      if (!account) {
+        ui.error("No wallet configured. Set PRIVATE_KEY in .env or run: agentcoin wallet new");
+        return;
+      }
+      console.log("");
+      console.log(`  Address: ${account.address}`);
+      console.log("");
     });
 
   await program.parseAsync(process.argv);
