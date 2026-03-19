@@ -99,7 +99,7 @@ export async function runPreflight(level: PreflightLevel): Promise<void> {
       results.push({
         label: `LLM API key not set for ${config.llmProvider}`,
         passed: false,
-        fix: "Set LLM_API_KEY in .env or run `agentcoin setup`",
+        fix: "Set LLM_API_KEY (or OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY) in .env, or run `agentcoin setup`",
       });
     }
   }

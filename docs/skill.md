@@ -95,7 +95,7 @@ CHAIN=base
 | `MINING_AGENT_ADDRESS` | Yes | -- | Deployed MiningAgent contract address |
 | `AGENT_COIN_ADDRESS` | Yes | -- | Deployed AgentCoin contract address |
 | `LLM_PROVIDER` | No | `openai` | LLM provider: `openai`, `anthropic`, `ollama`, or `gemini` |
-| `LLM_API_KEY` | Conditional | -- | Required for `openai` and `anthropic`, not needed for `ollama` |
+| `LLM_API_KEY` | Conditional | -- | API key. Falls back to `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` per provider. Not needed for `ollama` |
 | `LLM_MODEL` | No | `gpt-4o-mini` | Model identifier passed to the provider |
 | `RPC_URL` | No | `https://mainnet.base.org` | Base JSON-RPC endpoint |
 | `CHAIN` | No | `base` | Network selector; auto-detects `baseSepolia` if RPC URL contains "sepolia" |
@@ -314,7 +314,7 @@ Use the corresponding testnet contract addresses.
 | `PRIVATE_KEY must be a 32-byte hex string prefixed with 0x.` | Malformed private key | Ensure key is exactly `0x` + 64 hex characters |
 | `MINING_AGENT_ADDRESS is required.` | Contract address not set | Set `MINING_AGENT_ADDRESS` in `.env` |
 | `AGENT_COIN_ADDRESS is required.` | Contract address not set | Set `AGENT_COIN_ADDRESS` in `.env` |
-| `LLM_API_KEY is required for openai.` | Missing API key for cloud provider | Set `LLM_API_KEY` in `.env`, or switch to `ollama` |
+| `LLM_API_KEY is required for openai.` | Missing API key for cloud provider | Set `LLM_API_KEY` (or provider-specific key like `OPENAI_API_KEY`) in `.env`, or switch to `ollama` |
 | `Insufficient fee` | Not enough ETH sent with mint | Check `getMintPrice()` and ensure wallet has enough ETH |
 | `Sold out` | All 10,000 Miner NFTs minted | No more rigs available; buy one on secondary market |
 | `Expired` | SMHL challenge expired (>20s) | Your LLM is too slow; use a faster model or provider |

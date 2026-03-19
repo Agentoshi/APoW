@@ -81,13 +81,23 @@ function parseAddress(envKey: string, fallback: Address | undefined): Address {
   return ZERO_ADDRESS;
 }
 
+function resolveLlmApiKey(provider: LlmProvider): string | undefined {
+  if (process.env.LLM_API_KEY) return process.env.LLM_API_KEY;
+  switch (provider) {
+    case "openai": return process.env.OPENAI_API_KEY;
+    case "anthropic": return process.env.ANTHROPIC_API_KEY;
+    case "gemini": return process.env.GEMINI_API_KEY;
+    default: return undefined;
+  }
+}
+
 const chainName = resolveChainName();
 
 export const config: AppConfig = {
   privateKey: parsePrivateKey(process.env.PRIVATE_KEY),
   rpcUrl: process.env.RPC_URL ?? DEFAULT_RPC_URL,
   llmProvider: normalizeProvider(process.env.LLM_PROVIDER),
-  llmApiKey: process.env.LLM_API_KEY,
+  llmApiKey: resolveLlmApiKey(normalizeProvider(process.env.LLM_PROVIDER)),
   llmModel: process.env.LLM_MODEL ?? DEFAULT_LLM_MODEL,
   ollamaUrl: process.env.OLLAMA_URL ?? DEFAULT_OLLAMA_URL,
   chain: chainName === "baseSepolia" ? baseSepolia : base,
@@ -110,7 +120,9 @@ export function requireLlmApiKey(): string {
   }
 
   if (!config.llmApiKey) {
-    throw new Error(`LLM_API_KEY is required for ${config.llmProvider}.`);
+    const keyNames: Record<string, string> = { openai: "OPENAI_API_KEY", anthropic: "ANTHROPIC_API_KEY", gemini: "GEMINI_API_KEY" };
+    const alt = keyNames[config.llmProvider] ?? "";
+    throw new Error(`LLM_API_KEY${alt ? ` (or ${alt})` : ""} is required for ${config.llmProvider}.`);
   }
 
   return config.llmApiKey;
