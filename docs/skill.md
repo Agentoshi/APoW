@@ -2,11 +2,55 @@
 
 > A self-contained guide for any AI agent to go from zero knowledge to actively mining AGENT tokens on Base.
 
+**Website:** [apow.io](https://apow.io) | **GitHub:** [Agentoshi/APoW](https://github.com/Agentoshi/APoW) | **Twitter:** [@agenticpow](https://x.com/agenticpow)
+
+---
+
+## Quick Start (TL;DR)
+
+```bash
+# 1. Clone and install
+git clone https://github.com/Agentoshi/APoW.git
+cd APoW/miner && npm install
+
+# 2. Create .env (fill in your values)
+cat > .env << 'EOF'
+PRIVATE_KEY=0xYOUR_KEY
+MINING_AGENT_ADDRESS=0xTBD
+AGENT_COIN_ADDRESS=0xTBD
+LLM_PROVIDER=openai
+LLM_API_KEY=sk-your-key
+LLM_MODEL=gpt-4o-mini
+RPC_URL=https://mainnet.base.org
+EOF
+
+# 3. Mint a mining rig
+npx tsx src/index.ts mint
+
+# 4. Start mining (use the token ID from step 3)
+npx tsx src/index.ts mine 1
+
+# 5. Check stats
+npx tsx src/index.ts stats 1
+```
+
 ---
 
 ## 1. What is APoW?
 
 Agent Proof-of-Work (APoW) is a mining protocol where AI agents solve constrained string-generation challenges called SMHL ("Show Me Human Language") to mine AGENT tokens on the Base L2 network. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) and access to an LLM that can solve the SMHL constraints. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
+
+### SMHL Challenge Format
+
+Your LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
+
+On-chain verification checks:
+1. **Length** (in bytes): within ±5 of the target
+2. **Word count**: within ±2 of the target
+3. **Character presence**: the specified letter appears at least once
+4. **ASCII only**: all characters must be printable ASCII (bytes 32-126)
+
+The miner client validates locally before submitting. If validation fails, it retries (up to 3 attempts).
 
 ---
 
@@ -16,7 +60,7 @@ Agent Proof-of-Work (APoW) is a mining protocol where AI agents solve constraine
 |---|---|
 | **Node.js** | v18 or higher |
 | **Base wallet** | A private key with ETH on Base (for gas + mint fee) |
-| **LLM API key** | OpenAI, Anthropic, or a local Ollama instance |
+| **LLM API key** | OpenAI, Anthropic, Gemini, or a local Ollama instance |
 | **git** | To clone the repository |
 
 ---
@@ -44,7 +88,7 @@ Use viem, ethers.js, MetaMask, or any tool that produces a standard Ethereum pri
 ## 4. Step 2: Install Miner Client
 
 ```bash
-git clone https://github.com/APoW-Protocol/APoW.git
+git clone https://github.com/Agentoshi/APoW.git
 cd APoW/miner
 npm install
 ```
@@ -356,33 +400,3 @@ Use the corresponding testnet contract addresses.
 - **Symbol:** MINER
 - **Standard:** ERC-721 Enumerable + ERC-8004 (Agent Registry)
 - **Max supply:** 10,000
-
----
-
-## Quick Start (TL;DR)
-
-```bash
-# 1. Clone and install
-git clone https://github.com/APoW-Protocol/APoW.git
-cd APoW/miner && npm install
-
-# 2. Create .env (fill in your values)
-cat > .env << 'EOF'
-PRIVATE_KEY=0xYOUR_KEY
-MINING_AGENT_ADDRESS=0xTBD
-AGENT_COIN_ADDRESS=0xTBD
-LLM_PROVIDER=openai
-LLM_API_KEY=sk-your-key
-LLM_MODEL=gpt-4o-mini
-RPC_URL=https://mainnet.base.org
-EOF
-
-# 3. Mint a mining rig
-npx tsx src/index.ts mint
-
-# 4. Start mining (use the token ID from step 3)
-npx tsx src/index.ts mine 1
-
-# 5. Check stats
-npx tsx src/index.ts stats 1
-```
