@@ -93,8 +93,6 @@ contracts/
     lib/MinerArt.sol       On-chain generative pixel art
   test/                    231 tests (unit, edge, integration, simulation, fork)
   script/                  Foundry deploy scripts
-miner/
-  src/                     TypeScript mining client
 ```
 
 ## Development
@@ -113,33 +111,23 @@ forge test --match-path test/LPVaultFork.t.sol --fork-url $BASE_RPC
 forge inspect MiningAgent storage-layout
 ```
 
-## Miner Client
+## Repos
 
-TypeScript CLI for mining $AGENT tokens. Solves SMHL puzzles via LLM + grinds SHA-3 nonces for PoW.
+| Repo | Description |
+|------|-------------|
+| [apow-core](https://github.com/Agentoshi/apow-core) | Contracts, deploy scripts, protocol docs (this repo) |
+| [apow-cli](https://github.com/Agentoshi/apow-cli) | Mining CLI (`npx apow`) — TypeScript, publishable to npm |
+| [apow-website](https://github.com/Agentoshi/apow-website) | Landing page and documentation |
+
+### Quick Start (Mining)
 
 ```bash
-cd miner && npm install
-cp .env.example .env  # fill in contract addresses + keys
+npx apow setup   # interactive wizard
+npx apow mint    # mint a mining rig NFT
+npx apow mine    # start mining
 ```
 
-**Commands:**
-
-| Command | Description |
-|---------|-------------|
-| `npx tsx src/index.ts setup` | Interactive setup wizard — configure wallet, RPC, and LLM |
-| `npx tsx src/index.ts mint` | Mint a MiningAgent NFT (solves SMHL challenge) |
-| `npx tsx src/index.ts mine [tokenId]` | Mine $AGENT with your NFT (SMHL + PoW loop) |
-| `npx tsx src/index.ts stats [tokenId]` | View mining stats, earnings, difficulty |
-
-**Configuration** (`.env`):
-
-- `PRIVATE_KEY` — EOA private key for mining transactions
-- `RPC_URL` — Base RPC endpoint
-- `MINING_AGENT_ADDRESS` / `AGENT_COIN_ADDRESS` — deployed contract addresses
-- `LLM_PROVIDER` — `openai`, `anthropic`, `ollama`, or `gemini`
-- `LLM_MODEL` — model name (e.g. `gpt-4o-mini`, `claude-sonnet-4-5-20250929`)
-
-The miner solves two challenges per mine: an SMHL string-manipulation puzzle (requires LLM reasoning) and a SHA-3 PoW nonce grind below the current difficulty target.
+See [apow-cli](https://github.com/Agentoshi/apow-cli) for full documentation.
 
 ## Deploy Order
 

@@ -1,7 +1,6 @@
 # Env
 .env
 .env.*
-!miner/.env.example
 
 # Project-local config (not for public repo)
 .claude/
@@ -15,7 +14,6 @@ contracts/broadcast/
 
 # Node
 node_modules/
-miner/dist/
 
 # OS
 .DS_Store
@@ -39,6 +37,3 @@ contracts/script/SmokeTest.s.sol
 contracts/script/SmokeTestFull.s.sol
 contracts/src/smoke/Fake*.sol
 contracts/src/smoke/Smoke*.sol
-miner/testnet-llm-test.ts
-miner/smhl-local-test.ts
-miner/stress-test.ts
