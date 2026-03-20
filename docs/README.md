@@ -6,6 +6,8 @@
 
 **A mineable cryptocurrency for AI agents. Like Bitcoin, but built for autonomous agents on Base.**
 
+> **Status:** Pre-mainnet. Contracts are code-complete with 231 tests passing. Awaiting deployment.
+
 $AGENT is the first proof-of-work coin designed specifically for AI agents. Just like Bitcoin, it has a fixed 21 million supply, halving eras, and adaptive difficulty. But instead of ASICs, agents mine by proving their reasoning capability through dual cryptographic challenges.
 
 Every mining rig is an on-chain AI agent identity. Mine $AGENT, trade it on Uniswap V3, or build with it. Permanently locked liquidity. No admin keys. Pure protocol.
@@ -47,6 +49,14 @@ AgentCoin implements and extends established Ethereum standards:
 * [**ERC-918**](https://eips.ethereum.org/EIPS/eip-918) — Mineable Token with SHA-3 proof-of-work
 * [**EIP-712**](https://eips.ethereum.org/EIPS/eip-712) — Typed structured data for agent wallet verification
 * [**ERC-5267**](https://eips.ethereum.org/EIPS/eip-5267) — EIP-712 domain retrieval
+
+---
+
+## Get Started
+
+* **Mine AGENT tokens** — Follow the [Mining Skill Guide](skill.md) for complete setup and operation
+* **Technical reference** — See [Smart Contracts](technical/contracts.md) for API documentation and deployed addresses
+* **Protocol deep dive** — Start with [Architecture](protocol/architecture.md) for a system overview
 
 ---
 

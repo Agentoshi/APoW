@@ -27,6 +27,17 @@ When the vault balance reaches **5 ETH** (4.97 ETH + 0.03 ETH UNCX fee), anyone 
 - No additional liquidity can be added through the vault
 - The vault contract becomes inert
 
+### Adding Liquidity (Repeatable)
+
+After initial LP deployment, the vault continues accumulating ETH from ongoing mint fees. When the balance reaches ≥0.1 ETH (`ADD_LIQUIDITY_THRESHOLD`), anyone can call `addLiquidity()` to deepen the existing UNCX-locked position:
+
+1. Wraps all vault ETH to WETH (no UNCX fee for `increaseLiquidity`)
+2. Swaps all WETH → USDC via Uniswap V3
+3. Swaps half USDC → AGENT (buying from the pool)
+4. Increases liquidity on the existing UNCX-locked position
+
+This function is callable multiple times. Each call deepens the same eternal liquidity lock without creating new positions. The 0.1 ETH minimum prevents uneconomical gas-to-value ratios.
+
 ---
 
 ## LP Composition
