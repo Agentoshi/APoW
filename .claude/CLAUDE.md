@@ -78,10 +78,11 @@ cd miner && npm run build
 
 ## Current State
 
-- **Contracts:** Code-complete. 231/231 tests passing. SMHL retuned to tolerant verification (length ±5, words ±2, char anywhere). Deployed to Base Sepolia — 9 on-chain mines verified across 12 LLM providers.
+- **Contracts:** Code-complete. 231/231 tests passing. SMHL retuned to tolerant verification (length ±5, words ±2, char anywhere). Deployed to Base Sepolia — 9 on-chain mines verified across 12 LLM providers. Contracts verified on Sepolia Basescan.
 - **Fork tests:** 9 tests verifying real Uniswap V3 + UNCX integration on Base mainnet.
-- **Miner client:** Functional but pre-release (private:true, no unit tests, no npm publish).
-- **Deployment:** NOT deployed. Pre-deploy hardening phase. Deploy only on explicit user command.
+- **Miner client:** Functional but pre-release (private:true, no unit tests, no npm publish). Tested with 12 LLM providers (OpenAI, Anthropic, Gemini, Ollama models).
+- **Docs:** Comprehensive — competitive mining model, multi-wallet scaling strategies, ERC-8004 transfer semantics, full deployment runbook. All docs audited for accuracy.
+- **Deployment:** NOT deployed. Mainnet-ready pending deploy command. Deploy only on explicit user command.
 
 ## Critical Safety Rules
 
@@ -121,7 +122,7 @@ cd miner && npm run build
 | Gap | Priority | Description |
 |-----|----------|-------------|
 | No unit tests | HIGH | SMHL solver, nonce grinding, config parsing, error classification untested |
-| `private: true` | MEDIUM | Must remove before npm publish, add package metadata |
+| npm publish safety | LOW | `private: true` now set — remove before npm publish, add full package metadata |
 | No ABI verification | MEDIUM | miner/src/abi/ may drift from compiled contract ABIs |
 | No gas config | LOW | No maxPriorityFee override for congested network |
 | No CI | LOW | No GitHub Actions for `forge test` on PRs |

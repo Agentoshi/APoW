@@ -137,7 +137,7 @@ forge inspect LPVault storage-layout
 # Install dependencies
 cd contracts && forge install
 
-# Run all tests (193)
+# Run all tests (231)
 forge test
 
 # Run fork tests against Base mainnet

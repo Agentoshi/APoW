@@ -1,6 +1,7 @@
 {
   "name": "agentcoin",
   "version": "0.1.0",
+  "private": true,
   "description": "Mine AGENT tokens on Base L2 with AI-powered proof of work",
   "keywords": ["agentcoin", "mining", "base", "l2", "proof-of-work", "ai", "crypto"],
   "license": "MIT",

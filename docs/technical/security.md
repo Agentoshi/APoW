@@ -97,7 +97,7 @@ The reward calculation loops through all past eras: `for (i = 0; i < era; i++) {
 
 ## Audit Status
 
-The contracts have been thoroughly tested with 193 tests covering:
+The contracts have been thoroughly tested with 231 tests covering:
 
 - Unit tests for all public functions
 - Edge cases for boundary conditions
