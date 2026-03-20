@@ -5,6 +5,7 @@ import miningAgentAbiJson from "./abi/MiningAgent.json";
 import { config } from "./config";
 import { txUrl, tokenUrl } from "./explorer";
 import { normalizeSmhlChallenge, solveSmhlChallenge, type SmhlChallenge } from "./smhl";
+import { formatHashpower } from "./detect";
 import { startMining } from "./miner";
 import * as ui from "./ui";
 import { getEthBalance, publicClient, requireWallet } from "./wallet";
@@ -39,10 +40,6 @@ function deriveChallengeFromSeed(seed: Hex): SmhlChallenge {
     charValue,
     totalLength,
   ]);
-}
-
-function formatHashpower(hashpower: number): string {
-  return `${(hashpower / 100).toFixed(2)}x`;
 }
 
 async function findMintedTokenId(

@@ -93,11 +93,11 @@ Each miner NFT has a rarity tier that determines hashpower:
 
 | Rarity | Hashpower | Reward Multiplier |
 |--------|-----------|-------------------|
-| Common | 1.00x | 1.00x |
-| Uncommon | 1.25x | 1.25x |
-| Rare | 2.00x | 2.00x |
-| Epic | 4.00x | 4.00x |
-| Mythic | 10.00x | 10.00x |
+| Common | 100 | 1.0x |
+| Uncommon | 150 | 1.5x |
+| Rare | 200 | 2.0x |
+| Epic | 300 | 3.0x |
+| Mythic | 500 | 5.0x |
 
 ## How Mining Works
 

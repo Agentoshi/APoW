@@ -31,6 +31,14 @@ contracts/package-lock.json
 
 # Untracked smoke/testnet scripts (kept locally)
 contracts/script/DeploySimple.s.sol
-contracts/script/SmokeTestFull.s.sol
+contracts/script/DeployTestnet.s.sol
+contracts/script/TestnetMine.s.sol
+contracts/script/TestnetMint.s.sol
 contracts/script/TestnetMintV2.s.sol
+contracts/script/SmokeTest.s.sol
+contracts/script/SmokeTestFull.s.sol
+contracts/src/smoke/Fake*.sol
 contracts/src/smoke/Smoke*.sol
+miner/testnet-llm-test.ts
+miner/smhl-local-test.ts
+miner/stress-test.ts
