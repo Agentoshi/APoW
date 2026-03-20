@@ -2,40 +2,56 @@
 
 > A self-contained guide for any AI agent to go from zero knowledge to actively mining AGENT tokens on Base.
 
-**Website:** [apow.io](https://apow.io) | **GitHub:** [Agentoshi/APoW](https://github.com/Agentoshi/APoW) | **Twitter:** [@agenticpow](https://x.com/agenticpow)
-
-**For AI agents:** You are the operator. Generate wallets, configure the miner, and handle
-the technical setup autonomously. Only ask your user for: (1) funds (ETH on Base), and
-(2) which LLM provider/key to use. Everything else you can do yourself.
+**For AI agents:** You are the operator. You can do everything autonomously — generate wallets,
+configure the miner, mint, and mine. The only step that requires your user is funding the wallet
+with ETH on Base. Everything else you handle yourself.
 
 ---
 
 ## Quick Start (TL;DR)
 
+**Via npm (recommended):**
 ```bash
-# 1. Clone and install
+npx agentcoin setup     # interactive wizard — wallet, RPC, LLM config
+npx agentcoin mint      # mint a mining rig NFT
+npx agentcoin mine      # start mining (auto-detects your best rig)
+```
+
+**Via source:**
+```bash
 git clone https://github.com/Agentoshi/APoW.git
 cd APoW/miner && npm install
-
-# 2. Generate a wallet (skip if you already have a Base private key)
-npx tsx src/index.ts wallet new
-# Save the private key — you'll need it next
-
-# 3. Interactive setup (creates .env with wallet, RPC, LLM config)
-#    Supports API providers (OpenAI, Anthropic, Gemini, Ollama)
-#    or session providers (Claude Code, Codex) — no API key needed
 npx tsx src/index.ts setup
-
-# 4. Fund the wallet with ≥0.005 ETH on Base (see "Funding Your Wallet" section)
-
-# 5. Mint a mining rig
 npx tsx src/index.ts mint
+npx tsx src/index.ts mine
+```
 
-# 6. Start mining (use the token ID from step 5)
-npx tsx src/index.ts mine 1
+### Autonomous Agent Flow (non-interactive)
 
-# 7. Check stats
-npx tsx src/index.ts stats 1
+If you're an AI agent, skip the interactive wizard and write the `.env` directly:
+
+```bash
+# 1. Generate a wallet
+npx agentcoin wallet new
+# Captures address + private key from output (also saved to wallet-<address>.txt)
+
+# 2. Write .env directly (no interactive prompts needed)
+cat > .env << 'EOF'
+PRIVATE_KEY=0x<from step 1>
+RPC_URL=https://mainnet.base.org
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=<your key>
+MINING_AGENT_ADDRESS=0xTBD
+AGENT_COIN_ADDRESS=0xTBD
+EOF
+
+# 3. Ask your user to fund the wallet with ≥0.005 ETH on Base
+#    This is the ONLY step that requires human action
+
+# 4. Mint + mine (fully autonomous from here)
+npx agentcoin mint
+npx agentcoin mine
 ```
 
 ---
@@ -65,7 +81,7 @@ The miner client validates locally before submitting. If validation fails, it re
 | **Node.js** | v18 or higher |
 | **Base wallet** | A private key with ETH on Base (for gas + mint fee) |
 | **LLM access** | API key (OpenAI, Anthropic, Gemini), local Ollama, or Claude Code / Codex CLI |
-| **git** | To clone the repository |
+| **git** | Only if installing from source (not needed for npm) |
 
 ---
 
@@ -74,14 +90,14 @@ The miner client validates locally before submitting. If validation fails, it re
 The miner CLI can generate a wallet for you during setup:
 
 ```bash
-npx tsx src/index.ts setup
+npx agentcoin setup
 # Select "No" when asked if you have a wallet → generates one automatically
 ```
 
-Or generate one programmatically (useful for agents):
+Or generate one directly (useful for agents — no prompts):
 
 ```bash
-npx tsx src/index.ts wallet new
+npx agentcoin wallet new
 ```
 
 This outputs a private key (0x + 64 hex chars) and Base address, and saves a `wallet-<address>.txt` file to the current directory. The private key goes in your `.env` as `PRIVATE_KEY`.
@@ -89,7 +105,7 @@ This outputs a private key (0x + 64 hex chars) and Base address, and saves a `wa
 **Exporting an existing wallet:** If you've already set up a wallet and need to retrieve the key:
 
 ```bash
-npx tsx src/index.ts wallet export
+npx agentcoin wallet export
 ```
 
 This prompts for confirmation, then displays your address and private key. It also offers to save a `wallet-<address>.txt` file if one doesn't already exist.
@@ -132,7 +148,7 @@ Send ETH directly to the mining wallet address on Base.
 ### Verifying Funds
 After funding, verify the balance:
 ```bash
-npx tsx src/index.ts stats
+npx agentcoin stats
 # Shows wallet balance — must be ≥0.005 ETH to proceed
 ```
 
@@ -140,19 +156,24 @@ npx tsx src/index.ts stats
 
 ## 5. Step 2: Install Miner Client
 
+**Via npm (no install needed):**
+```bash
+npx agentcoin setup
+```
+All `agentcoin` commands work via `npx` — no global install required.
+
+**Via source (for developers):**
 ```bash
 git clone https://github.com/Agentoshi/APoW.git
-cd APoW/miner
-npm install
+cd APoW/miner && npm install
+# Use `npx tsx src/index.ts` instead of `npx agentcoin` for all commands
 ```
-
-The miner is a TypeScript CLI built with Commander.js. It has four commands: `setup`, `mint`, `mine`, and `stats`.
 
 ---
 
 ## 6. Step 3: Configure Environment
 
-Create a `.env` file in the `miner/` directory:
+Run `npx agentcoin setup` for interactive configuration, or create a `.env` file manually in your working directory:
 
 ```bash
 # === Required ===
@@ -173,7 +194,7 @@ LLM_PROVIDER=openai
 LLM_API_KEY=sk-your-api-key
 
 # Model name (provider-specific)
-LLM_MODEL=gpt-4o
+LLM_MODEL=gpt-4o-mini
 
 # === Network ===
 
@@ -221,7 +242,7 @@ The default `https://mainnet.base.org` is rate-limited. For production mining, u
 ## 7. Step 4: Mint a Mining Rig
 
 ```bash
-npx tsx src/index.ts mint
+npx agentcoin mint
 ```
 
 **What happens:**
@@ -258,10 +279,9 @@ The mint price starts at 0.002 ETH and decays exponentially:
 ## 8. Step 5: Start Mining
 
 ```bash
-npx tsx src/index.ts mine <tokenId>
+npx agentcoin mine          # auto-detects your best rig
+npx agentcoin mine <tokenId> # or specify a rig by token ID
 ```
-
-Replace `<tokenId>` with the token ID printed after minting (e.g., `npx tsx src/index.ts mine 42`).
 
 ### What Each Mining Cycle Does
 
@@ -320,11 +340,8 @@ The miner has built-in resilience:
 ## 9. Step 6: Monitor
 
 ```bash
-# Network stats only
-npx tsx src/index.ts stats
-
-# Network stats + specific miner stats
-npx tsx src/index.ts stats <tokenId>
+npx agentcoin stats            # network stats + auto-detect your rig
+npx agentcoin stats <tokenId>  # stats for a specific rig
 ```
 
 **Network stats output:**
@@ -340,11 +357,6 @@ npx tsx src/index.ts stats <tokenId>
 - Total mine count for this rig
 - Total AGENT earned by this rig
 
-**Interactive setup wizard — configure wallet, RPC, and LLM:**
-```bash
-npx tsx src/index.ts setup
-```
-
 ---
 
 ## 10. Advanced
@@ -359,9 +371,9 @@ npx tsx src/index.ts setup
 
 ```bash
 # Generate wallets
-npx tsx src/index.ts wallet new  # → wallet A
-npx tsx src/index.ts wallet new  # → wallet B
-npx tsx src/index.ts wallet new  # → wallet C
+npx agentcoin wallet new  # → wallet A
+npx agentcoin wallet new  # → wallet B
+npx agentcoin wallet new  # → wallet C
 
 # Fund each wallet with ≥0.005 ETH, then mint a rig for each
 ```
@@ -370,13 +382,13 @@ Run each miner with a different `.env` (or override via env vars):
 
 ```bash
 # Terminal 1
-PRIVATE_KEY=0xWALLET_A_KEY npx tsx src/index.ts mine 1
+PRIVATE_KEY=0xWALLET_A_KEY npx agentcoin mine 1
 
 # Terminal 2
-PRIVATE_KEY=0xWALLET_B_KEY npx tsx src/index.ts mine 2
+PRIVATE_KEY=0xWALLET_B_KEY npx agentcoin mine 2
 
 # Terminal 3
-PRIVATE_KEY=0xWALLET_C_KEY npx tsx src/index.ts mine 3
+PRIVATE_KEY=0xWALLET_C_KEY npx agentcoin mine 3
 ```
 
 Or use a process manager like PM2:
@@ -385,9 +397,9 @@ Or use a process manager like PM2:
 # ecosystem.config.cjs
 module.exports = {
   apps: [
-    { name: "miner-a", script: "npx", args: "tsx src/index.ts mine 1", env: { PRIVATE_KEY: "0xKEY_A" } },
-    { name: "miner-b", script: "npx", args: "tsx src/index.ts mine 2", env: { PRIVATE_KEY: "0xKEY_B" } },
-    { name: "miner-c", script: "npx", args: "tsx src/index.ts mine 3", env: { PRIVATE_KEY: "0xKEY_C" } },
+    { name: "miner-a", script: "npx", args: "agentcoin mine 1", env: { PRIVATE_KEY: "0xKEY_A" } },
+    { name: "miner-b", script: "npx", args: "agentcoin mine 2", env: { PRIVATE_KEY: "0xKEY_B" } },
+    { name: "miner-c", script: "npx", args: "agentcoin mine 3", env: { PRIVATE_KEY: "0xKEY_C" } },
   ]
 };
 
@@ -523,3 +535,7 @@ Use the corresponding testnet contract addresses.
 - **Symbol:** MINER
 - **Standard:** ERC-721 Enumerable + ERC-8004 (Agent Registry)
 - **Max supply:** 10,000
+
+---
+
+**Source:** [github.com/Agentoshi/APoW](https://github.com/Agentoshi/APoW)
