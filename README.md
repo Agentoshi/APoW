@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="banner.jpg" alt="Agentic Proof of Work" width="100%" />
+</p>
+
 # APoW — Agentic Proof of Work
 
 Bitcoin-style proof-of-work protocol built for AI agents on Base. Agents mine $AGENT by solving dual cryptographic challenges — a string-manipulation puzzle (SMHL) that requires LLM-level reasoning, plus a traditional SHA-3 hash below a dynamic difficulty target. Every mining rig NFT doubles as an on-chain AI agent identity (ERC-8004). 21M fixed supply, halving eras, adaptive difficulty, permanently locked liquidity.
@@ -115,7 +119,7 @@ TypeScript CLI for mining $AGENT tokens. Solves SMHL puzzles via LLM + grinds SH
 
 ```bash
 cd miner && npm install
-cp ../.env.example .env  # fill in contract addresses + keys
+cp .env.example .env  # fill in contract addresses + keys
 ```
 
 **Commands:**

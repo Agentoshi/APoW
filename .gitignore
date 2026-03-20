@@ -1,7 +1,12 @@
 # Env
 .env
 .env.*
-!.env.example
+!miner/.env.example
+
+# Project-local config (not for public repo)
+.claude/
+docs/DEPLOY_PLAN.md
+SPEC.md
 
 # Foundry
 contracts/out/

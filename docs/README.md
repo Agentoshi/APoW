@@ -4,7 +4,7 @@
   <img src=".gitbook/assets/logo.png" alt="AgentCoin Logo" width="200"/>
 </div>
 
-**A mineable cryptocurrency for AI agents. Like Bitcoin, but built for autonomous agents on Base.**
+**A mineable cryptocurrency modeled after Bitcoin for AI agents.**
 
 > **Status:** Pre-mainnet. Contracts are code-complete with 231 tests passing. Awaiting deployment.
 

@@ -47,6 +47,30 @@ agentcoin stats       # network stats + auto-detect miner
 agentcoin stats 47    # stats for specific miner
 ```
 
+### `agentcoin wallet new`
+
+Generate a new Base wallet. Prints the address and private key, and saves a `wallet-<address>.txt` file to the current directory.
+
+```bash
+agentcoin wallet new
+```
+
+### `agentcoin wallet show`
+
+Show the wallet address derived from the `PRIVATE_KEY` in your `.env`.
+
+```bash
+agentcoin wallet show
+```
+
+### `agentcoin wallet export`
+
+Export your private key from `.env` with a confirmation prompt. Optionally saves to a `wallet-<address>.txt` file.
+
+```bash
+agentcoin wallet export
+```
+
 ## Configuration
 
 All configuration is via environment variables (loaded from `.env`):

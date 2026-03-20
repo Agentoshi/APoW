@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Command } from "commander";
 
@@ -12,6 +12,23 @@ import { runPreflight } from "./preflight";
 import { displayStats } from "./stats";
 import * as ui from "./ui";
 import { account } from "./wallet";
+
+function saveKeyFile(address: string, privateKey: string): string {
+  const filename = `wallet-${address}.txt`;
+  const filepath = join(process.cwd(), filename);
+  const content = [
+    `Address:     ${address}`,
+    `Private Key: ${privateKey}`,
+    ``,
+    `Generated:   ${new Date().toISOString()}`,
+    ``,
+    `Import this key into MetaMask, Phantom, or any EVM wallet.`,
+    `Keep this file safe — anyone with the private key controls your funds.`,
+    "",
+  ].join("\n");
+  writeFileSync(filepath, content, "utf8");
+  return filepath;
+}
 
 function parseTokenId(value: string): bigint {
   try {
@@ -111,6 +128,11 @@ async function setupWizard(): Promise<void> {
     console.log("");
     console.log(`  ${ui.dim("Fund this address with ≥0.005 ETH on Base to start.")}`);
     console.log("");
+
+    const keyPath = saveKeyFile(addr, privateKey);
+    console.log(`  ${ui.dim(`Key saved to: ${keyPath}`)}`);
+    console.log(`  ${ui.yellow("Back up this file securely, then delete it.")}`);
+    console.log("");
   }
 
   values.PRIVATE_KEY = privateKey;
@@ -197,7 +219,10 @@ async function setupWizard(): Promise<void> {
     const gitignore = readFileSync(gitignorePath, "utf8");
     if (!gitignore.includes(".env")) {
       ui.warn(".gitignore does not include .env — your secrets may be committed!");
-      ui.hint("Add .env to .gitignore");
+      ui.hint("Add .env and wallet-*.txt to .gitignore");
+    }
+    if (!gitignore.includes("wallet-")) {
+      ui.hint("Consider adding wallet-*.txt to .gitignore");
     }
   }
 
@@ -282,7 +307,7 @@ async function main(): Promise<void> {
 
   walletCmd
     .command("new")
-    .description("Generate a new Base wallet (prints key and address)")
+    .description("Generate a new Base wallet (prints key and saves to file)")
     .action(async () => {
       const { generatePrivateKey, privateKeyToAccount } = await import("viem/accounts");
       const key = generatePrivateKey();
@@ -296,6 +321,10 @@ async function main(): Promise<void> {
       console.log(`  ${ui.yellow("⚠ SAVE YOUR PRIVATE KEY — this is the only time")}`);
       console.log(`  ${ui.yellow("  it will be displayed. Anyone with this key")}`);
       console.log(`  ${ui.yellow("  controls your funds.")}`);
+      console.log("");
+      const keyPath = saveKeyFile(acct.address, key);
+      console.log(`  ${ui.dim(`Key saved to: ${keyPath}`)}`);
+      console.log(`  ${ui.yellow("Back up this file securely, then delete it.")}`);
       console.log("");
       console.log(`  ${ui.dim("Import into Phantom, MetaMask, or any EVM wallet")}`);
       console.log(`  ${ui.dim("to view your AGENT tokens and Mining Rig NFT.")}`);
@@ -313,6 +342,39 @@ async function main(): Promise<void> {
       console.log("");
       console.log(`  Address: ${account.address}`);
       console.log("");
+    });
+
+  walletCmd
+    .command("export")
+    .description("Export wallet private key (with confirmation)")
+    .action(async () => {
+      if (!account || !config.privateKey) {
+        ui.error("No wallet configured. Set PRIVATE_KEY in .env or run: agentcoin wallet new");
+        return;
+      }
+
+      const proceed = await ui.confirm("This will display your private key. Continue?");
+      if (!proceed) {
+        console.log("  Cancelled.");
+        return;
+      }
+
+      console.log("");
+      console.log(`  Address:     ${account.address}`);
+      console.log(`  Private Key: ${config.privateKey}`);
+      console.log("");
+
+      const filename = `wallet-${account.address}.txt`;
+      const filepath = join(process.cwd(), filename);
+      if (!existsSync(filepath)) {
+        const save = await ui.confirm("Save to file?");
+        if (save) {
+          const keyPath = saveKeyFile(account.address, config.privateKey);
+          console.log(`  ${ui.dim(`Saved to: ${keyPath}`)}`);
+          console.log(`  ${ui.yellow("Back up this file securely, then delete it.")}`);
+          console.log("");
+        }
+      }
     });
 
   await program.parseAsync(process.argv);

@@ -84,7 +84,15 @@ Or generate one programmatically (useful for agents):
 npx tsx src/index.ts wallet new
 ```
 
-This outputs a private key (0x + 64 hex chars) and Base address. The private key goes in your `.env` as `PRIVATE_KEY`.
+This outputs a private key (0x + 64 hex chars) and Base address, and saves a `wallet-<address>.txt` file to the current directory. The private key goes in your `.env` as `PRIVATE_KEY`.
+
+**Exporting an existing wallet:** If you've already set up a wallet and need to retrieve the key:
+
+```bash
+npx tsx src/index.ts wallet export
+```
+
+This prompts for confirmation, then displays your address and private key. It also offers to save a `wallet-<address>.txt` file if one doesn't already exist.
 
 **Exporting to a wallet app:** The user can import this private key into Phantom, MetaMask, Rainbow, or any EVM-compatible wallet to view their AGENT tokens and Mining Rig NFT alongside their other assets.
 
