@@ -37,3 +37,4 @@ contracts/script/SmokeTest.s.sol
 contracts/script/SmokeTestFull.s.sol
 contracts/src/smoke/Fake*.sol
 contracts/src/smoke/Smoke*.sol
+docs/MAINNET_MASTER_PLAN.md
