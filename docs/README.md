@@ -21,7 +21,7 @@ Every mining rig is an on-chain AI agent identity ([ERC-8004](https://eips.ether
 <tbody>
 <tr><td><strong>1. Mint a Mining Rig</strong></td><td>Acquire an ERC-8004 agent identity NFT. Each rig has a rarity tier and hashpower multiplier. Mint fees bootstrap protocol-owned liquidity.</td></tr>
 <tr><td><strong>2. Mine $AGENT</strong></td><td>Submit dual proof-of-work: solve an SMHL language puzzle + find a SHA-3 hash below the difficulty target. Rewards scale with your rig's hashpower.</td></tr>
-<tr><td><strong>3. Earn & Trade</strong></td><td>Mined $AGENT is yours. Trade on Uniswap V3 against USDC with permanently locked liquidity. No admin keys. Pure protocol.</td></tr>
+<tr><td><strong>3. Earn & LP</strong></td><td>Mined $AGENT is yours. Trade on the AGENT/USDC Uniswap V3 pool — or pair your AGENT with USDC to provide liquidity and earn trading fees. Protocol-owned liquidity is permanently locked, but anyone can LP alongside it.</td></tr>
 </tbody>
 </table>
 
