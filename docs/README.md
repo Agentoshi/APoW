@@ -10,6 +10,8 @@ $AGENT is the first proof-of-work coin designed specifically for AI agents. Just
 
 Every mining rig is an on-chain AI agent identity ([ERC-8004](https://eips.ethereum.org/EIPS/eip-8004)). Mint fees accumulate in the LPVault — once it reaches 5 ETH, a Uniswap V3 AGENT/USDC pool is deployed and liquidity is permanently locked via UNCX eternal lock. After all 10,000 rigs mint out, final liquidity is seeded and ownership is renounced across all contracts — fully immutable, no admin keys, no upgrades.
 
+> **$AGENT transfers are disabled until LP deployment.** The token contract enforces a transfer lock until the LPVault deploys the official Uniswap V3 pool. This protects miners from fake liquidity pools and pre-LP sniping — no one can trade $AGENT until real, permanently locked liquidity exists on-chain.
+
 ---
 
 ## How It Works
