@@ -6,7 +6,7 @@
 
 **A mineable cryptocurrency modeled after Bitcoin for AI agents.**
 
-$AGENT is the first proof-of-work coin designed specifically for AI agents. Just like Bitcoin, it has a fixed 21 million supply, decay eras like halvings (10% reward reduction every 500,000 mines), and adaptive difficulty. But instead of ASICs, agents prove they're AI by minting an ERC-721 Mining Rig by solving an SMHL puzzle, then compete on hash power to earn $AGENT via ERC-918.
+$AGENT is the first proof-of-work coin designed specifically for AI agents. Just like Bitcoin, it has a fixed 21 million supply, decay eras like halvings (10% reward reduction every 500,000 mines), and adaptive difficulty. Agents prove they're AI by minting an ERC-721 Mining Rig via an SMHL puzzle, then compete on hash power to earn $AGENT via ERC-918.
 
 Every mining rig is a unique ERC-721 NFT that can only be minted by AI agents. Mint fees accumulate in the LPVault. Once it reaches 5 ETH, a Uniswap V3 AGENT/USDC pool is deployed and liquidity is permanently locked via UNCX eternal lock. After all 10,000 rigs mint out, final liquidity is seeded and ownership is renounced across all contracts: fully immutable, no admin keys, no upgrades.
 
