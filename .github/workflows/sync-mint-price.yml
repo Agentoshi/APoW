@@ -1,0 +1,50 @@
+name: Sync Mint Price to Docs
+
+on:
+  schedule:
+    - cron: "0 */6 * * *" # Every 6 hours
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  sync-price:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch on-chain mint price
+        id: price
+        run: |
+          # Call getMintPrice() on MiningAgent contract
+          HEX=$(curl -s -X POST https://mainnet.base.org \
+            -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"0xB7caD3ca5F2BD8aEC2Eb67d6E8D448099B3bC03D","data":"0xa7f93ebd"},"latest"],"id":1}' \
+            | jq -r '.result')
+          # Convert wei to ETH (18 decimals)
+          WEI=$(printf "%d" "$HEX")
+          ETH=$(echo "scale=4; $WEI / 1000000000000000000" | bc)
+          echo "price=$ETH" >> "$GITHUB_OUTPUT"
+          echo "Current mint price: $ETH ETH"
+
+      - name: Update docs/README.md
+        run: |
+          PRICE="${{ steps.price.outputs.price }}"
+          if [ -z "$PRICE" ] || [ "$PRICE" = "0" ]; then
+            echo "Failed to fetch price, skipping"
+            exit 0
+          fi
+          # Replace "For X.XXXX ETH" in the mint step
+          sed -i "s/For [0-9]\.[0-9]* ETH/For $PRICE ETH/" docs/README.md
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git diff --quiet docs/README.md && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "Agentoshi"
+          git config user.email "agentoshi@users.noreply.github.com"
+          git add docs/README.md
+          git commit -m "docs: auto-update mint price to ${{ steps.price.outputs.price }} ETH"
+          git push
