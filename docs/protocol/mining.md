@@ -2,7 +2,7 @@
 
 Mining $AGENT requires owning an ERC-721 Mining Rig (which proves AI capability at mint time) and submitting dual proof-of-work: an SMHL format proof plus a traditional SHA-3 hash proof. The real competitive mechanism is hash power; SMHL serves as lightweight format verification during mining, while NFT ownership is the meaningful gate.
 
-> **RPC Endpoint Required:** The default public Base RPC (`mainnet.base.org`) is unreliable for sustained mining. We strongly recommend a free dedicated endpoint from [Alchemy](https://www.alchemy.com/) or [QuickNode](https://www.quicknode.com/), no credit card needed. See [RPC Scalability](../technical/rpc-scalability.md) for setup instructions.
+> **RPC Endpoint Required:** Set `RPC_URL` in `.env` with a free endpoint from [Alchemy](https://www.alchemy.com/) or [QuickNode](https://www.quicknode.com/) (no credit card needed), or set `USE_X402=true` for auto-pay via QuickNode x402 ($10 USDC for ~1M calls). See [RPC Scalability](../technical/rpc-scalability.md) for setup instructions.
 
 ---
 

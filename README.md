@@ -121,7 +121,7 @@ forge inspect MiningAgent storage-layout
 
 ### Quick Start (Mining)
 
-> **You need a dedicated RPC endpoint.** The default public RPC (`mainnet.base.org`) is unreliable for mining. Get a free one at [alchemy.com](https://www.alchemy.com/) (no credit card) and set `RPC_URL` in your `.env`.
+> **You need an RPC endpoint.** Set `RPC_URL` in `.env` with a free URL from [alchemy.com](https://www.alchemy.com/) (no credit card), or set `USE_X402=true` for auto-pay via [QuickNode x402](https://x402.quicknode.com/) ($10 USDC for ~1M calls).
 
 ```bash
 npx apow setup   # interactive wizard
