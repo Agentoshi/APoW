@@ -4,7 +4,7 @@
 
 # APoW — Agentic Proof of Work
 
-Bitcoin-style proof-of-work protocol built for AI agents on Base. Agents mine $AGENT by solving dual cryptographic challenges — a string-manipulation puzzle (SMHL) that requires LLM-level reasoning, plus a traditional SHA-3 hash below a dynamic difficulty target. Every mining rig NFT doubles as an on-chain AI agent identity (ERC-8004). 21M fixed supply, 10% reward decay per era, adaptive difficulty, permanently locked liquidity.
+Bitcoin-style proof-of-work protocol built for AI agents on Base. Agents prove their identity once by minting an ERC-8004 Mining Rig (requires LLM to solve an SMHL challenge), then compete on hash power to mine $AGENT tokens. Mining is a pure hash power competition — SMHL serves as lightweight format verification while the ERC-8004 NFT ownership is the meaningful gate. 21M fixed supply, 10% reward decay per era, adaptive difficulty, permanently locked liquidity.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ MiningAgent (ERC-8004)             AgentCoin (ERC-20)        LPVault
 
 **MiningAgent** — [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent identities that double as mining rigs. Each has a rarity tier and hashpower multiplier that determines mining reward output. Minting requires solving an SMHL (String-Match Hash Lock) challenge within 20 seconds — a puzzle designed to be trivial for AI agents and difficult for bots. Mint fees flow to LPVault to bootstrap protocol-owned liquidity. Every minted agent has an `agentURI`, key-value metadata, and EIP-712-verified wallet binding that clears on transfer.
 
-**AgentCoin** — The mineable token following [ERC-918](https://eips.ethereum.org/EIPS/eip-918) (Mineable Token) concepts. Agents submit dual proof: an SMHL solution demonstrating language capability + a SHA-3 nonce producing a hash below the current difficulty target. Miners must own a MiningAgent NFT to mine. One mine per Base block. Difficulty auto-adjusts every 64 mines, targeting 1 mine per 5 blocks (~10s). Rewards decay 10% every 500,000 mines across eras.
+**AgentCoin** — The mineable token following [ERC-918](https://eips.ethereum.org/EIPS/eip-918) (Mineable Token) concepts. Agents submit dual proof: an SMHL format proof + a SHA-3 nonce producing a hash below the current difficulty target. The hash proof is the competitive mechanism; SMHL serves as lightweight format verification (agent identity is proven once at mint time). Miners must own a MiningAgent NFT to mine. One mine per Base block. Difficulty auto-adjusts every 64 mines, targeting 1 mine per 5 blocks (~10s). Rewards decay 10% every 500,000 mines across eras.
 
 **LPVault** — Accumulates ETH from NFT mint fees. When threshold is reached (5 ETH), swaps all ETH to USDC and deploys a full-range AGENT/USDC Uniswap V3 position locked forever via UNCX eternal lock. Post-deployment, accumulated ETH from ongoing mint fees can be added to the existing locked position via `addLiquidity()` (callable multiple times before ownership renunciation). Deployer retains trading fee collection rights but liquidity can never be pulled.
 
@@ -65,7 +65,7 @@ Exponential decay: starts at 0.002 ETH, drops 5% every 100 mints, floored at 0.0
 - **Immutable pointers** — `miningAgent` and `lpVault` on AgentCoin are `immutable`. MiningAgent setters are one-time only.
 - **Reentrancy protection** — `ReentrancyGuardTransient` (EIP-1153 transient storage) on `mine()` and `mint()`.
 - **LP mint slippage** — 90% minimum on Uniswap V3 position mint amounts.
-- **Bot deterrent** — SMHL challenges require LLM-grade string manipulation. PoW hash includes `msg.sender`, preventing nonce transfer. `tx.origin` check blocks contract callers.
+- **Agent identity gate** — Minting requires LLM to solve SMHL within 20s (proves agent capability). ERC-8004 NFT ownership is the mining gate. PoW hash includes `msg.sender`, preventing nonce transfer. `tx.origin` check blocks contract callers.
 - **One mine per block** — `block.number > lastMineBlockNumber` enforced on-chain.
 - **Constructor validation** — Zero-address checks on all constructor parameters.
 - **Agent wallet binding** — EIP-712 typed signatures verify wallet ownership. `agentWallet` is a reserved metadata key that can only be set via `setAgentWallet()` with a valid signature from the new wallet. Cleared automatically on NFT transfer.

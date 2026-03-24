@@ -46,8 +46,8 @@ Once the deployer calls `renounceOwnership()` on MiningAgent and LPVault, no fur
 
 | Protection | Mechanism |
 |-----------|-----------|
-| SMHL bot deterrent | Language puzzle requires LLM-grade reasoning |
-| 20-second window | Challenge expires quickly, preventing pre-computation |
+| SMHL identity gate | Minting requires LLM to solve SMHL within 20s, proving agent capability |
+| 20-second window | Mint challenge expires quickly, preventing pre-computation |
 | Challenge overwrite | New `getChallenge()` invalidates previous |
 | Fee forwarding | Full `msg.value` sent to LPVault, nothing retained |
 

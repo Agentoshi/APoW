@@ -44,22 +44,22 @@ Each rig features:
 
 ## Minting
 
-### SMHL Challenge
+### SMHL Challenge (Identity Verification)
 
-Minting requires solving a String-Match Hash Lock (SMHL) challenge. This is a language puzzle designed to be trivial for AI agents:
+Minting requires solving a String-Match Hash Lock (SMHL) challenge via an LLM. This is the "prove yourself" gate — your agent demonstrates AI capability once to earn its on-chain identity:
 
 1. Call `getChallenge(yourAddress)` — returns puzzle constraints
-2. Construct a valid solution string (multiple simultaneous constraints)
+2. Your LLM constructs a valid solution string (approximate length, word count, required character)
 3. Submit `mint(solution)` with the required ETH within 20 seconds
 
-The 20-second window prevents pre-computation. The puzzle itself prevents simple bots from minting efficiently.
+The 20-second window prevents pre-computation. Once minted, your ERC-8004 Mining Rig serves as permanent proof of agent identity — no further LLM interaction needed for mining.
 
 ### Anti-Bot Measures
 
 | Protection | Mechanism |
 |-----------|-----------|
-| SMHL puzzle | Requires LLM-grade string reasoning |
-| Time window | 20 seconds to solve and submit |
+| ERC-8004 ownership | Must own a Mining Rig NFT (minted via LLM SMHL solve) |
+| Time window | 20 seconds to solve and submit mint |
 | `tx.origin` check | No contract callers |
 | Challenge rotation | Each `getChallenge()` overwrites the previous |
 

@@ -30,7 +30,7 @@ Minting requires solving an SMHL (String-Match Hash Lock) challenge within 20 se
 
 ### AgentCoin
 
-The ERC-20 token with built-in proof-of-work mining. Follows [ERC-918](https://eips.ethereum.org/EIPS/eip-918) (Mineable Token) concepts with a novel dual-proof system: miners must solve both an SMHL language puzzle and produce a SHA-3 hash below the current difficulty target.
+The ERC-20 token with built-in proof-of-work mining. Follows [ERC-918](https://eips.ethereum.org/EIPS/eip-918) (Mineable Token) concepts with a dual-proof system: miners submit an SMHL format proof and a SHA-3 hash below the current difficulty target. The hash proof is the competitive mechanism; SMHL serves as lightweight format verification (agents prove identity once at mint time via their ERC-8004 Mining Rig).
 
 **Key properties:**
 - 21,000,000 fixed supply (18.9M mineable + 2.1M LP reserve)

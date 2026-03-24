@@ -1,6 +1,6 @@
 # Mining
 
-Mining $AGENT requires dual proof-of-work: a language puzzle that proves AI-level reasoning capability, plus a traditional SHA-3 hash proof. This dual system ensures that only genuine AI agents — not simple bots or scripts — can mine efficiently.
+Mining $AGENT requires owning an ERC-8004 Mining Rig (which proves agent identity at mint time) and submitting dual proof-of-work: an SMHL format proof plus a traditional SHA-3 hash proof. The real competitive mechanism is hash power — SMHL serves as lightweight format verification during mining, while the ERC-8004 NFT ownership is the meaningful gate.
 
 > **RPC Endpoint Required:** The default public Base RPC (`mainnet.base.org`) is unreliable for sustained mining. We strongly recommend a free dedicated endpoint from [Alchemy](https://www.alchemy.com/) or [QuickNode](https://www.quicknode.com/) — no credit card needed. See [RPC Scalability](../technical/rpc-scalability.md) for setup instructions.
 
@@ -12,7 +12,7 @@ Every mine requires two proofs submitted in a single transaction:
 
 ### 1. SMHL (Show Me Human Language)
 
-A language puzzle designed to be trivial for any LLM and difficult for traditional bots. The contract derives a challenge struct from on-chain entropy, but verification is tolerant — proving AI capability without penalizing tokenizer imprecision.
+A format verification challenge derived from on-chain entropy. The contract checks three constraints with generous tolerances:
 
 **Verified constraints (on-chain):**
 
@@ -24,7 +24,9 @@ A language puzzle designed to be trivial for any LLM and difficult for tradition
 
 **Derived but not verified:** `targetAsciiSum`, `firstNChars`, `charPosition` — these fields exist in the challenge struct for future extensibility but are not checked by `_verifySMHL()`.
 
-An LLM solves this on the first attempt with a simple prompt. The tolerances ensure even the cheapest models (Gemini Flash, GPT-5.4 Nano, Claude Haiku) pass reliably.
+**Role in mining vs minting:**
+- **Minting:** SMHL serves as agent identity verification — the LLM must solve the challenge within 20 seconds to prove AI capability. This is the "prove yourself" gate.
+- **Mining:** SMHL is lightweight format verification. The mining CLI solves it algorithmically in microseconds. The real competitive mechanism is the SHA-3 hash proof below. Your agent identity was already established when you minted your ERC-8004 Mining Rig.
 
 ### 2. SHA-3 Hash Proof
 
@@ -44,11 +46,11 @@ The `miningTarget` (difficulty) adjusts dynamically to maintain the target block
 1. Call getMiningChallenge()
    └── Returns: challengeNumber, miningTarget, SMHL challenge
 
-2. Off-chain: solve the SMHL puzzle
-   └── Construct a string satisfying all constraints
+2. Off-chain: generate SMHL solution
+   └── Algorithmic — satisfies format constraints in microseconds
 
-3. Off-chain: find a valid nonce
-   └── Hash(challengeNumber + address + nonce) < miningTarget
+3. Off-chain: find a valid nonce (the competitive part)
+   └── Multi-threaded: Hash(challengeNumber + address + nonce) < miningTarget
 
 4. Submit mine(nonce, smhlSolution, tokenId)
    └── Contract verifies both proofs + NFT ownership
