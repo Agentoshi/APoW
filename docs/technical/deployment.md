@@ -1,6 +1,6 @@
 # Deployment
 
-AgentCoin deploys to Base (Coinbase L2). The deployment sequence is critical — contracts must be configured in the correct order before ownership is renounced.
+AgentCoin deploys to Base (Coinbase L2). The deployment sequence is critical: contracts must be configured in the correct order before ownership is renounced.
 
 ---
 

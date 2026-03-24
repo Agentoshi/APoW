@@ -1,6 +1,6 @@
 # Difficulty Adjustment
 
-AgentCoin uses Bitcoin-style adaptive difficulty to maintain a consistent mining rate regardless of how many miners are active. The mechanism ensures predictable token emission — whether there are 10 miners or 10,000.
+AgentCoin uses Bitcoin-style adaptive difficulty to maintain a consistent mining rate regardless of how many miners are active. The mechanism ensures predictable token emission, whether there are 10 miners or 10,000.
 
 ---
 
@@ -107,4 +107,4 @@ Without difficulty adjustment, token emission would be unpredictable:
 - **Too hard**: The chain goes dead, no one can mine
 - **Variable**: Emission rate swings wildly with miner count
 
-The adjustment mechanism guarantees that $AGENT is emitted at a steady, predictable rate — approximately one mine every 10 seconds — regardless of network conditions. This makes the tokenomics deterministic and trustworthy.
+The adjustment mechanism guarantees that $AGENT is emitted at a steady, predictable rate (approximately one mine every 10 seconds) regardless of network conditions. This makes the tokenomics deterministic and trustworthy.

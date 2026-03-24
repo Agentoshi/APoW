@@ -12,13 +12,13 @@ AgentCoin follows the Bitcoin model: fixed supply, predictable emission, decreas
 | **LP Reserve** | 2,100,000 AGENT | 10% | Permanently locked Uniswap V3 liquidity |
 | **Total** | **21,000,000 AGENT** | **100%** | |
 
-The LP reserve is minted to the LPVault contract at deployment. It is paired with USDC (converted from mint fee ETH) and locked forever via UNCX eternal lock. No one — not even the deployer — can access these tokens.
+The LP reserve is minted to the LPVault contract at deployment. It is paired with USDC (converted from mint fee ETH) and locked forever via UNCX eternal lock. No one, not even the deployer, can access these tokens.
 
 ---
 
 ## Emission Schedule
 
-Mining rewards follow an exponential decay curve across eras — 10% reduction every 500,000 mines.
+Mining rewards follow an exponential decay curve across eras, with a 10% reduction every 500,000 mines.
 
 ### Era System
 
@@ -61,7 +61,7 @@ actual_reward = base_reward * (hashpower / 100)
 | Epic | 300 (3.0x) | 9.0 AGENT |
 | Mythic | 500 (5.0x) | 15.0 AGENT |
 
-Higher-rarity rigs don't mine more often — they earn more per mine when they win.
+Higher-rarity rigs don't mine more often; they earn more per mine when they win.
 
 ---
 
@@ -71,12 +71,12 @@ Higher-rarity rigs don't mine more often — they earn more per mine when they w
 
 - **Early miners** earn higher rewards (earlier eras) but pay more for rigs
 - **Late miners** pay less for rigs but earn lower rewards per mine
-- **More miners** doesn't increase total emission — difficulty adjusts to maintain a constant rate
-- **Hashpower matters** — Mythic rigs are genuinely 5x more productive than Common
+- **More miners** doesn't increase total emission; difficulty adjusts to maintain a constant rate
+- **Hashpower matters.** Mythic rigs are genuinely 5x more productive than Common
 
 ### For the Market
 
-- **Predictable emission** — the exact supply at any point in time is deterministic
-- **Deflationary pressure** — rewards decrease every era while demand can grow
-- **Permanent liquidity** — the LP is locked forever, providing a permanent trading floor
-- **No sell pressure from team/VCs** — 100% of supply is either mined or locked in LP
+- **Predictable emission:** the exact supply at any point in time is deterministic
+- **Deflationary pressure:** rewards decrease every era while demand can grow
+- **Permanent liquidity:** the LP is locked forever, providing a permanent trading floor
+- **No sell pressure from team/VCs:** 100% of supply is either mined or locked in LP

@@ -22,7 +22,7 @@ Once the deployer calls `renounceOwnership()` on MiningAgent and LPVault, no fur
 
 | Protection | Mechanism |
 |-----------|-----------|
-| Eternal lock | UNCX `type(uint256).max` — LP can never be withdrawn |
+| Eternal lock | UNCX `type(uint256).max`, LP can never be withdrawn |
 | Atomic deployment | Wrap, swap, pool, liquidity, lock in one transaction |
 | Slippage protection | 90% minimum on Uniswap V3 position mint |
 | Owner-gated deployment | `deployLP()` is owner-gated and one-time |
@@ -37,7 +37,7 @@ Once the deployer calls `renounceOwnership()` on MiningAgent and LPVault, no fur
 | One mine per block | `block.number > lastMineBlockNumber` |
 | Challenge rotation | New challenge after every mine |
 | SMHL verification | Pure function, ~28k gas, no state side effects |
-| Hash includes sender | `keccak256(challenge, msg.sender, nonce)` — nonces aren't transferable |
+| Hash includes sender | `keccak256(challenge, msg.sender, nonce)`, nonces aren't transferable |
 | Reentrancy guard | `ReentrancyGuardTransient` (EIP-1153) on `mint()` and `mine()` |
 
 ---
@@ -70,7 +70,7 @@ Once the deployer calls `renounceOwnership()` on MiningAgent and LPVault, no fur
 
 Both MiningAgent and AgentCoin use `ReentrancyGuardTransient` from OpenZeppelin v5, which leverages EIP-1153 transient storage. This is more gas-efficient than traditional reentrancy guards and provides the same protection.
 
-The LPVault's `deployLP()` is naturally protected by the `lpDeployed` flag — it can only execute once.
+The LPVault's `deployLP()` is naturally protected by the `lpDeployed` flag, so it can only execute once.
 
 ---
 
@@ -83,7 +83,7 @@ Both `mint()` and `mine()` require `msg.sender == tx.origin`. This prevents cont
 - Account abstraction (ERC-4337) wallets cannot directly mine or mint
 - Users must interact from EOAs
 
-This is an intentional design choice — the SMHL challenge system assumes a direct human/agent interaction pattern.
+This is an intentional design choice. The SMHL challenge system assumes a direct human/agent interaction pattern.
 
 ### Difficulty Floor
 

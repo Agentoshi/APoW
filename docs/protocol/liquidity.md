@@ -1,6 +1,6 @@
 # Liquidity
 
-All mint revenue is used to create permanently locked liquidity for $AGENT. No one — not even the deployer — can ever withdraw it. This guarantees a permanent trading floor from day one.
+All mint revenue is used to create permanently locked liquidity for $AGENT. No one, not even the deployer, can ever withdraw it. This guarantees a permanent trading floor from day one.
 
 ---
 
@@ -14,11 +14,11 @@ Every mining rig mint forwards its full `msg.value` to the LPVault contract. The
 
 When the vault balance reaches **5 ETH** (4.97 ETH + 0.03 ETH UNCX fee), the owner can trigger LP deployment:
 
-1. **Wrap** — All ETH is wrapped to WETH
-2. **Swap** — All WETH is swapped to USDC via Uniswap V3
-3. **Pool** — A new AGENT/USDC pool is created and initialized
-4. **Liquidity** — 2,100,000 AGENT + all USDC deposited as full-range liquidity
-5. **Lock** — The LP position NFT is locked forever via UNCX
+1. **Wrap:** All ETH is wrapped to WETH
+2. **Swap:** All WETH is swapped to USDC via Uniswap V3
+3. **Pool:** A new AGENT/USDC pool is created and initialized
+4. **Liquidity:** 2,100,000 AGENT + all USDC deposited as full-range liquidity
+5. **Lock:** The LP position NFT is locked forever via UNCX
 
 ### After Deployment
 
@@ -46,7 +46,7 @@ This function is callable multiple times. Each call deepens the same eternal liq
 | AGENT | 2,100,000 | LP reserve (minted at deployment) |
 | USDC | ~$5,300+ | Converted from mint fee ETH |
 
-The LP reserve is 10% of total supply — a significant amount that ensures meaningful liquidity depth from launch.
+The LP reserve is 10% of total supply, a significant amount that ensures meaningful liquidity depth from launch.
 
 ---
 
@@ -70,9 +70,9 @@ This is not a time-locked position that eventually unlocks. The lock duration is
 
 The LP pair is AGENT/USDC, not AGENT/WETH. This means:
 
-- **Stable pricing** — traders see AGENT priced in dollars, not a volatile asset
-- **Lower impermanent loss** — one side of the pair is stable
-- **Better UX** — users think in dollar terms
+- **Stable pricing:** traders see AGENT priced in dollars, not a volatile asset
+- **Lower impermanent loss:** one side of the pair is stable
+- **Better UX:** users think in dollar terms
 
 All mint fee ETH is swapped to USDC before LP deployment.
 
@@ -94,8 +94,8 @@ The LP deployment includes safety measures:
 
 The entire LP flow is trustless:
 
-- **Threshold-gated** — LP deploys only after vault reaches 5 ETH threshold
-- **Owner-initiated** — `deployLP()` is restricted to the contract owner (`onlyOwner`)
-- **Atomic execution** — wrap, swap, pool, liquidity, lock in one transaction
-- **No intermediate custody** — ETH goes directly from vault to Uniswap
-- **Verifiable on-chain** — UNCX lock is publicly auditable
+- **Threshold-gated:** LP deploys only after vault reaches 5 ETH threshold
+- **Owner-initiated:** `deployLP()` is restricted to the contract owner (`onlyOwner`)
+- **Atomic execution:** wrap, swap, pool, liquidity, lock in one transaction
+- **No intermediate custody:** ETH goes directly from vault to Uniswap
+- **Verifiable on-chain:** UNCX lock is publicly auditable

@@ -39,7 +39,7 @@ RPC_URL=https://base-mainnet.g.alchemy.com/v2/THEIR_KEY
 RPC_URL=http://localhost:8545
 ```
 
-The default (`https://mainnet.base.org`) is Base's free public RPC. **However, it has aggressive rate limits and is unreliable for sustained mining — transactions frequently fail with `429 Too Many Requests` or timeout.** We strongly recommend using a free dedicated endpoint (Alchemy, QuickNode, etc.) even for a single miner.
+The default (`https://mainnet.base.org`) is Base's free public RPC. **However, it has aggressive rate limits and is unreliable for sustained mining. Transactions frequently fail with `429 Too Many Requests` or timeout.** We strongly recommend using a free dedicated endpoint (Alchemy, QuickNode, etc.) even for a single miner.
 
 ---
 
@@ -47,8 +47,8 @@ The default (`https://mainnet.base.org`) is Base's free public RPC. **However, i
 
 | Setup | Monthly Cost | Use Case |
 |-------|-------------|----------|
-| Public Base RPC (default) | $0 | **Not recommended** — unreliable, frequent 429 errors |
-| Alchemy free tier | $0 | **Recommended** — 300M CU/month, reliable |
+| Public Base RPC (default) | $0 | **Not recommended.** Unreliable, frequent 429 errors |
+| Alchemy free tier | $0 | **Recommended.** 300M CU/month, reliable |
 | Alchemy PAYG | ~$20/mo | Power mining |
 | Own Base node | Electricity only | Mining farm |
 
@@ -62,9 +62,9 @@ AgentCoin is sniper-resistant by design. No additional protection mechanisms nee
 
 ### Base L2 Natural Resistance
 
-- **No public mempool** — Coinbase's centralized sequencer processes FIFO
-- **No gas auctions** — uniform base fee (~0.001 gwei), no priority bidding
-- **2-second blocks** — minimal extraction window
+- **No public mempool:** Coinbase's centralized sequencer processes FIFO
+- **No gas auctions:** uniform base fee (~0.001 gwei), no priority bidding
+- **2-second blocks:** minimal extraction window
 
 ### Protocol-Level Protection
 

@@ -39,16 +39,16 @@ Mining rig pricing follows an exponential decay curve. Early minters pay a premi
 
 The first ~4,500 mints follow the decay curve from 0.002 ETH down to the 0.0002 ETH floor. Early supporters pay more but gain:
 
-- **Time advantage** — earlier mining means more total AGENT earned over the rig's lifetime
-- **First-mover position** — mine when competition is lowest and difficulty is easiest
+- **Time advantage:** earlier mining means more total AGENT earned over the rig's lifetime
+- **First-mover position:** mine when competition is lowest and difficulty is easiest
 
 ### Distribution Phase (Mints 4,500–10,000)
 
 The remaining ~5,500 mints are all at the 0.0002 ETH floor. This is the mass distribution phase:
 
-- **Maximum accessibility** — anyone can afford a rig
-- **Broad distribution** — more unique miners strengthens the network
-- **Better ROI per ETH** — cheaper entry, same mining capability
+- **Maximum accessibility:** anyone can afford a rig
+- **Broad distribution:** more unique miners strengthens the network
+- **Better ROI per ETH:** cheaper entry, same mining capability
 
 ---
 
@@ -82,4 +82,4 @@ This ETH is converted to USDC and paired with the 2.1M AGENT LP reserve to creat
 | Dutch auction | Creates sniping incentives and gas wars |
 | Bonding curve (up) | Punishes late participants |
 
-Exponential decay with a 5% step is gentle enough that there's no meaningful incentive to snipe — waiting 100 mints saves less than 0.0001 ETH. It rewards early supporters without punishing late participants, and the floor ensures mass distribution.
+Exponential decay with a 5% step is gentle enough that there's no meaningful incentive to snipe (waiting 100 mints saves less than 0.0001 ETH). It rewards early supporters without punishing late participants, and the floor ensures mass distribution.

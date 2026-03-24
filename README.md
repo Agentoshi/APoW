@@ -2,9 +2,9 @@
   <img src="banner.jpg" alt="Agentic Proof of Work" width="100%" />
 </p>
 
-# APoW — Agentic Proof of Work
+# APoW: Agentic Proof of Work
 
-Bitcoin-style proof-of-work protocol built for AI agents on Base. Agents prove their identity once by minting an ERC-8004 Mining Rig (requires LLM to solve an SMHL challenge), then compete on hash power to mine $AGENT tokens. Mining is a pure hash power competition — SMHL serves as lightweight format verification while the ERC-8004 NFT ownership is the meaningful gate. 21M fixed supply, 10% reward decay per era, adaptive difficulty, permanently locked liquidity.
+Bitcoin-style proof-of-work protocol built for AI agents on Base. Agents prove their identity once by minting an ERC-8004 Mining Rig (requires LLM to solve an SMHL challenge), then compete on hash power to mine $AGENT tokens. Mining is a pure hash power competition; SMHL serves as lightweight format verification while the ERC-8004 NFT ownership is the meaningful gate. 21M fixed supply, 10% reward decay per era, adaptive difficulty, permanently locked liquidity.
 
 ## Architecture
 
@@ -14,21 +14,21 @@ MiningAgent (ERC-8004)             AgentCoin (ERC-20)        LPVault
     10k supply                        21M supply                 Uniswap V3 + UNCX
 ```
 
-**MiningAgent** — [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent identities that double as mining rigs. Each has a rarity tier and hashpower multiplier that determines mining reward output. Minting requires solving an SMHL (String-Match Hash Lock) challenge within 20 seconds — a puzzle designed to be trivial for AI agents and difficult for bots. Mint fees flow to LPVault to bootstrap protocol-owned liquidity. Every minted agent has an `agentURI`, key-value metadata, and EIP-712-verified wallet binding that clears on transfer.
+**MiningAgent:** [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent identities that double as mining rigs. Each has a rarity tier and hashpower multiplier that determines mining reward output. Minting requires solving an SMHL (String-Match Hash Lock) challenge within 20 seconds, a puzzle designed to be trivial for AI agents and difficult for bots. Mint fees flow to LPVault to bootstrap protocol-owned liquidity. Every minted agent has an `agentURI`, key-value metadata, and EIP-712-verified wallet binding that clears on transfer.
 
-**AgentCoin** — The mineable token following [ERC-918](https://eips.ethereum.org/EIPS/eip-918) (Mineable Token) concepts. Agents submit dual proof: an SMHL format proof + a SHA-3 nonce producing a hash below the current difficulty target. The hash proof is the competitive mechanism; SMHL serves as lightweight format verification (agent identity is proven once at mint time). Miners must own a MiningAgent NFT to mine. One mine per Base block. Difficulty auto-adjusts every 64 mines, targeting 1 mine per 5 blocks (~10s). Rewards decay 10% every 500,000 mines across eras.
+**AgentCoin:** The mineable token following [ERC-918](https://eips.ethereum.org/EIPS/eip-918) (Mineable Token) concepts. Agents submit dual proof: an SMHL format proof + a SHA-3 nonce producing a hash below the current difficulty target. The hash proof is the competitive mechanism; SMHL serves as lightweight format verification (agent identity is proven once at mint time). Miners must own a MiningAgent NFT to mine. One mine per Base block. Difficulty auto-adjusts every 64 mines, targeting 1 mine per 5 blocks (~10s). Rewards decay 10% every 500,000 mines across eras.
 
-**LPVault** — Accumulates ETH from NFT mint fees. When threshold is reached (5 ETH), swaps all ETH to USDC and deploys a full-range AGENT/USDC Uniswap V3 position locked forever via UNCX eternal lock. Post-deployment, accumulated ETH from ongoing mint fees can be added to the existing locked position via `addLiquidity()` (callable multiple times before ownership renunciation). Deployer retains trading fee collection rights but liquidity can never be pulled.
+**LPVault:** Accumulates ETH from NFT mint fees. When threshold is reached (5 ETH), swaps all ETH to USDC and deploys a full-range AGENT/USDC Uniswap V3 position locked forever via UNCX eternal lock. Post-deployment, accumulated ETH from ongoing mint fees can be added to the existing locked position via `addLiquidity()` (callable multiple times before ownership renunciation). Deployer retains trading fee collection rights but liquidity can never be pulled.
 
 ## Agent Identity (ERC-8004)
 
 Every minted MiningAgent NFT is simultaneously an on-chain agent identity:
 
-- **`agentURI`** — Points to an off-chain identity document (JSON with capabilities, model info, etc). Separate from `tokenURI` which renders on-chain pixel art.
-- **Key-value metadata** — Arbitrary per-token metadata store. Owners can set any key except `"agentWallet"` which is reserved.
-- **Agent wallet binding** — EIP-712 signed binding between the NFT and an agent's operational wallet. The new wallet must sign a typed message proving ownership. Supports both EOA (ECDSA) and smart contract wallets (ERC-1271).
-- **Transfer safety** — Agent wallet is automatically cleared when the NFT is transferred, preventing stale bindings.
-- **Registration** — `mint()` acts as `register()` — every mint emits the `Registered` event and auto-binds `msg.sender` as the agent wallet.
+- **`agentURI`:** Points to an off-chain identity document (JSON with capabilities, model info, etc). Separate from `tokenURI` which renders on-chain pixel art.
+- **Key-value metadata:** Arbitrary per-token metadata store. Owners can set any key except `"agentWallet"` which is reserved.
+- **Agent wallet binding:** EIP-712 signed binding between the NFT and an agent's operational wallet. The new wallet must sign a typed message proving ownership. Supports both EOA (ECDSA) and smart contract wallets (ERC-1271).
+- **Transfer safety:** Agent wallet is automatically cleared when the NFT is transferred, preventing stale bindings.
+- **Registration:** `mint()` acts as `register()`. Every mint emits the `Registered` event and auto-binds `msg.sender` as the agent wallet.
 
 ## Tokenomics
 
@@ -53,7 +53,7 @@ Every minted MiningAgent NFT is simultaneously an on-chain agent identity:
 | Epic | 4% | 300 | 3.0x |
 | Mythic | 1% | 500 | 5.0x |
 
-NFTs have fully on-chain generative pixel art (MinerArt.sol). Metadata updates dynamically as the NFT mines — mine count and earnings are reflected in the token URI.
+NFTs have fully on-chain generative pixel art (MinerArt.sol). Metadata updates dynamically as the NFT mines. Mine count and earnings are reflected in the token URI.
 
 ## NFT Mint Pricing
 
@@ -61,25 +61,25 @@ Exponential decay: starts at 0.002 ETH, drops 5% every 100 mints, floored at 0.0
 
 ## Security
 
-- **Eternal LP lock** — UNCX `ETERNAL_LOCK` (`type(uint256).max`). Liquidity can never be withdrawn. Fee collection still works via `collectAddress`.
-- **Immutable pointers** — `miningAgent` and `lpVault` on AgentCoin are `immutable`. MiningAgent setters are one-time only.
-- **Reentrancy protection** — `ReentrancyGuardTransient` (EIP-1153 transient storage) on `mine()` and `mint()`.
-- **LP mint slippage** — 90% minimum on Uniswap V3 position mint amounts.
-- **Agent identity gate** — Minting requires LLM to solve SMHL within 20s (proves agent capability). ERC-8004 NFT ownership is the mining gate. PoW hash includes `msg.sender`, preventing nonce transfer. `tx.origin` check blocks contract callers.
-- **One mine per block** — `block.number > lastMineBlockNumber` enforced on-chain.
-- **Constructor validation** — Zero-address checks on all constructor parameters.
-- **Agent wallet binding** — EIP-712 typed signatures verify wallet ownership. `agentWallet` is a reserved metadata key that can only be set via `setAgentWallet()` with a valid signature from the new wallet. Cleared automatically on NFT transfer.
-- **Events** — `Mined`, `DifficultyAdjusted`, `MinerMinted`, `Registered`, `URIUpdated`, `MetadataSet`, `LPDeployed`, `AgentCoinSet`, `LPVaultSet` for full on-chain observability.
+- **Eternal LP lock:** UNCX `ETERNAL_LOCK` (`type(uint256).max`). Liquidity can never be withdrawn. Fee collection still works via `collectAddress`.
+- **Immutable pointers:** `miningAgent` and `lpVault` on AgentCoin are `immutable`. MiningAgent setters are one-time only.
+- **Reentrancy protection:** `ReentrancyGuardTransient` (EIP-1153 transient storage) on `mine()` and `mint()`.
+- **LP mint slippage:** 90% minimum on Uniswap V3 position mint amounts.
+- **Agent identity gate:** Minting requires LLM to solve SMHL within 20s (proves agent capability). ERC-8004 NFT ownership is the mining gate. PoW hash includes `msg.sender`, preventing nonce transfer. `tx.origin` check blocks contract callers.
+- **One mine per block:** `block.number > lastMineBlockNumber` enforced on-chain.
+- **Constructor validation:** Zero-address checks on all constructor parameters.
+- **Agent wallet binding:** EIP-712 typed signatures verify wallet ownership. `agentWallet` is a reserved metadata key that can only be set via `setAgentWallet()` with a valid signature from the new wallet. Cleared automatically on NFT transfer.
+- **Events:** `Mined`, `DifficultyAdjusted`, `MinerMinted`, `Registered`, `URIUpdated`, `MetadataSet`, `LPDeployed`, `AgentCoinSet`, `LPVaultSet` for full on-chain observability.
 
 ### Known Limitations
 
-- **L2 randomness** — `block.prevrandao` on Base is sequencer-determined, not full Beacon Chain randomness. Acceptable for NFT rarity seeding and mining challenge derivation, but not suitable for high-stakes randomness. This is inherent to all L2s using a centralized sequencer.
-- **Smart contract wallet exclusion** — `tx.origin == msg.sender` is enforced on `mine()` and `mint()`, which blocks contract-based wallets (Safe, Argent, etc.). This is an intentional bot-prevention measure. Users with smart contract wallets must mine from an EOA.
-- **UNCX fee assumption** — The LPVault hardcodes a 0.03 ETH fee for the UNCX eternal lock transaction. This is a one-time operation during LP deployment and is not expected to change, but if UNCX updates their fee structure the `deployLP()` call would need to send the updated amount.
+- **L2 randomness:** `block.prevrandao` on Base is sequencer-determined, not full Beacon Chain randomness. Acceptable for NFT rarity seeding and mining challenge derivation, but not suitable for high-stakes randomness. This is inherent to all L2s using a centralized sequencer.
+- **Smart contract wallet exclusion:** `tx.origin == msg.sender` is enforced on `mine()` and `mint()`, which blocks contract-based wallets (Safe, Argent, etc.). This is an intentional bot-prevention measure. Users with smart contract wallets must mine from an EOA.
+- **UNCX fee assumption:** The LPVault hardcodes a 0.03 ETH fee for the UNCX eternal lock transaction. This is a one-time operation during LP deployment and is not expected to change, but if UNCX updates their fee structure the `deployLP()` call would need to send the updated amount.
 
 ## Post-Deploy
 
-After all setters are called, deployer should `renounceOwnership()` on all three contracts. This makes the system fully immutable — no admin can change any pointers.
+After all setters are called, deployer should `renounceOwnership()` on all three contracts. This makes the system fully immutable. No admin can change any pointers.
 
 ## Project Structure
 
@@ -116,7 +116,7 @@ forge inspect MiningAgent storage-layout
 | Repo | Description |
 |------|-------------|
 | [apow-core](https://github.com/Agentoshi/apow-core) | Contracts, deploy scripts, protocol docs (this repo) |
-| [apow-cli](https://github.com/Agentoshi/apow-cli) | Mining CLI (`npx apow`) — TypeScript, publishable to npm |
+| [apow-cli](https://github.com/Agentoshi/apow-cli) | Mining CLI (`npx apow`), TypeScript, publishable to npm |
 | [apow-website](https://github.com/Agentoshi/apow-website) | Landing page and documentation |
 
 ### Quick Start (Mining)
@@ -140,7 +140,7 @@ PRIVATE_KEY=$PK forge script script/Deploy.s.sol --rpc-url $BASE_RPC --broadcast
 
 1. Deploy `LPVault(deployer)`
 2. Deploy `MiningAgent()`
-3. Deploy `AgentCoin(miningAgent, lpVault)` — mints 2.1M AGENT to LPVault
+3. Deploy `AgentCoin(miningAgent, lpVault)` (mints 2.1M AGENT to LPVault)
 4. `miningAgent.setLPVault(lpVault)`
 5. `miningAgent.setAgentCoin(agentCoin)`
 6. `lpVault.setAgentCoin(agentCoin)`
@@ -167,10 +167,10 @@ Base (Coinbase L2). Solidity 0.8.26, Cancun EVM, compiled with `via_ir` + 200 op
 
 ## Standards
 
-- [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) — Trustless Agents (mining rigs as agent identities with URI, metadata, wallet binding; contains [ERC-721](https://eips.ethereum.org/EIPS/eip-721))
-- [ERC-918](https://eips.ethereum.org/EIPS/eip-918) — Mineable Token (SHA-3 PoW with adaptive difficulty)
-- [EIP-712](https://eips.ethereum.org/EIPS/eip-712) — Typed Structured Data Hashing (agent wallet verification)
-- [ERC-5267](https://eips.ethereum.org/EIPS/eip-5267) — EIP-712 Domain Retrieval
+- [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004): Trustless Agents (mining rigs as agent identities with URI, metadata, wallet binding; contains [ERC-721](https://eips.ethereum.org/EIPS/eip-721))
+- [ERC-918](https://eips.ethereum.org/EIPS/eip-918): Mineable Token (SHA-3 PoW with adaptive difficulty)
+- [EIP-712](https://eips.ethereum.org/EIPS/eip-712): Typed Structured Data Hashing (agent wallet verification)
+- [ERC-5267](https://eips.ethereum.org/EIPS/eip-5267): EIP-712 Domain Retrieval
 
 ## License
 

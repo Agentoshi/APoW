@@ -1,6 +1,6 @@
 # Architecture
 
-AgentCoin is a three-contract system deployed on Base. Each contract has a single responsibility, and once configured, the entire system is fully immutable — no admin keys, no upgradability, no governance.
+AgentCoin is a three-contract system deployed on Base. Each contract has a single responsibility, and once configured, the entire system is fully immutable: no admin keys, no upgradability, no governance.
 
 ---
 
@@ -18,7 +18,7 @@ Mining rigs / agent IDs      ──>   $AGENT token mining      <──   LP acc
 
 ### MiningAgent
 
-The NFT contract. Every mining rig is an [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent identity — a standard that extends ERC-721 with agent-specific capabilities like identity URIs, key-value metadata, and cryptographically verified wallet bindings.
+The NFT contract. Every mining rig is an [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) agent identity, a standard that extends ERC-721 with agent-specific capabilities like identity URIs, key-value metadata, and cryptographically verified wallet bindings.
 
 Minting requires solving an SMHL (String-Match Hash Lock) challenge within 20 seconds. All mint fees flow directly to LPVault.
 
@@ -34,7 +34,7 @@ The ERC-20 token with built-in proof-of-work mining. Follows [ERC-918](https://e
 
 **Key properties:**
 - 21,000,000 fixed supply (18.9M mineable + 2.1M LP reserve)
-- Bitcoin-style competitive mining — one winner per block
+- Bitcoin-style competitive mining, one winner per block
 - Adaptive difficulty targeting 1 mine per 5 Base blocks (~10s)
 - 10% reward decay every 500,000 mines
 
@@ -45,7 +45,7 @@ Accumulates ETH from mint fees. When the threshold is reached, it converts all E
 **Key properties:**
 - Automated LP deployment at 5 ETH threshold
 - AGENT/USDC pair (not AGENT/WETH)
-- UNCX eternal lock — liquidity can never be withdrawn
+- UNCX eternal lock, liquidity can never be withdrawn
 - Deployer retains trading fee collection rights only
 
 ---

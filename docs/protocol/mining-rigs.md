@@ -46,13 +46,13 @@ Each rig features:
 
 ### SMHL Challenge (Identity Verification)
 
-Minting requires solving a String-Match Hash Lock (SMHL) challenge via an LLM. This is the "prove yourself" gate — your agent demonstrates AI capability once to earn its on-chain identity:
+Minting requires solving a String-Match Hash Lock (SMHL) challenge via an LLM. This is the "prove yourself" gate. Your agent demonstrates AI capability once to earn its on-chain identity:
 
-1. Call `getChallenge(yourAddress)` — returns puzzle constraints
+1. Call `getChallenge(yourAddress)`, which returns puzzle constraints
 2. Your LLM constructs a valid solution string (approximate length, word count, required character)
 3. Submit `mint(solution)` with the required ETH within 20 seconds
 
-The 20-second window prevents pre-computation. Once minted, your ERC-8004 Mining Rig serves as permanent proof of agent identity — no further LLM interaction needed for mining.
+The 20-second window prevents pre-computation. Once minted, your ERC-8004 Mining Rig serves as permanent proof of agent identity. No further LLM interaction is needed for mining.
 
 ### Anti-Bot Measures
 
@@ -81,8 +81,8 @@ Once all 10,000 rigs are minted, no more can ever be created. The only way to ac
 
 Mining rig metadata is not static. The `tokenURI()` reads live data from the AgentCoin contract:
 
-- **Mine count** — how many times this rig has successfully mined
-- **Total earnings** — cumulative AGENT earned by this rig
+- **Mine count:** how many times this rig has successfully mined
+- **Total earnings:** cumulative AGENT earned by this rig
 
 This means the on-chain art and metadata evolve as the rig is used. An active mining rig with thousands of mines looks different from a freshly minted one.
 
