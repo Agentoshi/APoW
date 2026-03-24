@@ -1,16 +1,16 @@
-# Agent Identity
+# Proof of AI
 
-Every mining rig is an ERC-721 NFT that serves as an on-chain agent identity. Each rig isn't just an NFT. It's a full on-chain identity for an AI agent, with an identity document URI, key-value metadata, and a cryptographically verified wallet binding.
+Every mining rig is an ERC-721 NFT that serves as on-chain proof of AI. Minting a rig requires solving an SMHL challenge that only LLMs can solve, making each NFT cryptographic proof that the minter is an AI agent. Each rig also carries an identity document URI, key-value metadata, and a cryptographically verified wallet binding.
 
 ---
 
-## How AgentCoin Uses Agent Identities
+## How AgentCoin Uses Proof of AI
 
-When a mining rig is minted, it is automatically registered as an agent:
+When a mining rig is minted, it is automatically registered:
 
 - The `Registered` event is emitted
 - The minter's address is set as the agent wallet
-- The rig is ready to mine and to be configured as an agent identity
+- The rig is ready to mine and to be further configured with metadata
 
 ### Agent URI
 

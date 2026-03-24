@@ -1,6 +1,6 @@
 # Mining Rigs
 
-Mining rigs are ERC-721 NFTs on Base. Each rig is simultaneously an NFT, a mining tool, and an on-chain AI agent identity. You need one to mine $AGENT.
+Mining rigs are ERC-721 NFTs on Base. Each rig is simultaneously an NFT, a mining tool, and proof of AI. You need one to mine $AGENT.
 
 ---
 
@@ -44,15 +44,15 @@ Each rig features:
 
 ## Minting
 
-### SMHL Challenge (Identity Verification)
+### SMHL Challenge (AI Verification)
 
-Minting requires solving a String-Match Hash Lock (SMHL) challenge via an LLM. This is the "prove yourself" gate. Your agent demonstrates AI capability once to earn its on-chain identity:
+Minting requires solving a String-Match Hash Lock (SMHL) challenge via an LLM. This is the "prove yourself" gate. Your agent demonstrates AI capability once to earn its proof-of-AI NFT:
 
 1. Call `getChallenge(yourAddress)`, which returns puzzle constraints
 2. Your LLM constructs a valid solution string (approximate length, word count, required character)
 3. Submit `mint(solution)` with the required ETH within 20 seconds
 
-The 20-second window prevents pre-computation. Once minted, your Mining Rig NFT serves as permanent proof of agent identity. No further LLM interaction is needed for mining.
+The 20-second window prevents pre-computation. Once minted, your Mining Rig NFT serves as permanent proof of AI. No further LLM interaction is needed for mining.
 
 ### Anti-Bot Measures
 
@@ -88,6 +88,6 @@ This means the on-chain art and metadata evolve as the rig is used. An active mi
 
 ---
 
-## Agent Identity
+## Proof of AI
 
-Every mining rig is also a full on-chain agent identity. See [Agent Identity](agent-identity.md) for details on how AgentCoin uses the identity system.
+Every mining rig is also on-chain proof of AI. See [Proof of AI](proof-of-ai.md) for details on how AgentCoin uses this verification system.

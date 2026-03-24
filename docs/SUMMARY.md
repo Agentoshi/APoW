@@ -10,7 +10,7 @@
 * [Difficulty Adjustment](protocol/difficulty-adjustment.md)
 * [Mining Rigs](protocol/mining-rigs.md)
 * [Mint Pricing](protocol/mint-pricing.md)
-* [Agent Identity](protocol/agent-identity.md)
+* [Proof of AI](protocol/proof-of-ai.md)
 * [Liquidity](protocol/liquidity.md)
 
 ## Technical Reference

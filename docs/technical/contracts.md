@@ -6,7 +6,7 @@ Technical reference for all deployed contracts. Solidity 0.8.26, Cancun EVM, com
 
 ## MiningAgent.sol
 
-ERC-721 agent identity + mining rig NFT.
+ERC-721 proof-of-AI mining rig NFT.
 
 ### Constants
 
@@ -39,8 +39,8 @@ ERC-721 agent identity + mining rig NFT.
 | `getMintPrice()` | View | Current mint price |
 | `setAgentCoin(address)` | Owner (once) | Set AGENT token address |
 | `setLPVault(address)` | Owner (once) | Set fee vault address |
-| `agentURI(uint256)` | View | Get agent identity URI |
-| `setAgentURI(uint256, string)` | Authorized | Set agent identity URI |
+| `agentURI(uint256)` | View | Get agent URI |
+| `setAgentURI(uint256, string)` | Authorized | Set agent URI |
 | `getMetadata(uint256, string)` | View | Read metadata key |
 | `setMetadata(uint256, string, bytes)` | Authorized | Write metadata key |
 | `getAgentWallet(uint256)` | View | Get bound wallet |

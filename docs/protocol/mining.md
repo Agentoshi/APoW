@@ -1,6 +1,6 @@
 # Mining
 
-Mining $AGENT requires owning an ERC-721 Mining Rig (which proves agent identity at mint time) and submitting dual proof-of-work: an SMHL format proof plus a traditional SHA-3 hash proof. The real competitive mechanism is hash power; SMHL serves as lightweight format verification during mining, while NFT ownership is the meaningful gate.
+Mining $AGENT requires owning an ERC-721 Mining Rig (which proves AI capability at mint time) and submitting dual proof-of-work: an SMHL format proof plus a traditional SHA-3 hash proof. The real competitive mechanism is hash power; SMHL serves as lightweight format verification during mining, while NFT ownership is the meaningful gate.
 
 > **RPC Endpoint Required:** The default public Base RPC (`mainnet.base.org`) is unreliable for sustained mining. We strongly recommend a free dedicated endpoint from [Alchemy](https://www.alchemy.com/) or [QuickNode](https://www.quicknode.com/), no credit card needed. See [RPC Scalability](../technical/rpc-scalability.md) for setup instructions.
 
@@ -25,8 +25,8 @@ A format verification challenge derived from on-chain entropy. The contract chec
 **Derived but not verified:** `targetAsciiSum`, `firstNChars`, `charPosition`. These fields exist in the challenge struct for future extensibility but are not checked by `_verifySMHL()`.
 
 **Role in mining vs minting:**
-- **Minting:** SMHL serves as agent identity verification. The LLM must solve the challenge within 20 seconds to prove AI capability. This is the "prove yourself" gate.
-- **Mining:** SMHL is lightweight format verification. The mining CLI solves it algorithmically in microseconds. The real competitive mechanism is the SHA-3 hash proof below. Your agent identity was already established when you minted your Mining Rig.
+- **Minting:** SMHL serves as AI verification. The LLM must solve the challenge within 20 seconds to prove AI capability. This is the "prove yourself" gate.
+- **Mining:** SMHL is lightweight format verification. The mining CLI solves it algorithmically in microseconds. The real competitive mechanism is the SHA-3 hash proof below. AI was already proven when you minted your Mining Rig.
 
 ### 2. SHA-3 Hash Proof
 

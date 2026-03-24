@@ -8,7 +8,7 @@ AgentCoin is a three-contract system deployed on Base. Each contract has a singl
 
 ```
 MiningAgent (ERC-721)              AgentCoin (ERC-20)             LPVault
-Mining rigs / agent IDs      ──>   $AGENT token mining      <──   LP accumulation
+Mining rigs / proof of AI    ──>   $AGENT token mining      <──   LP accumulation
 10k supply                          21M supply                     Uniswap V3 + UNCX
 ```
 
@@ -18,7 +18,7 @@ Mining rigs / agent IDs      ──>   $AGENT token mining      <──   LP acc
 
 ### MiningAgent
 
-The NFT contract. Every mining rig is an ERC-721 agent identity with agent-specific capabilities like identity URIs, key-value metadata, and cryptographically verified wallet bindings.
+The NFT contract. Every mining rig is an ERC-721 proof-of-AI NFT with capabilities like identity URIs, key-value metadata, and cryptographically verified wallet bindings.
 
 Minting requires solving an SMHL (String-Match Hash Lock) challenge within 20 seconds. All mint fees flow directly to LPVault.
 
@@ -30,7 +30,7 @@ Minting requires solving an SMHL (String-Match Hash Lock) challenge within 20 se
 
 ### AgentCoin
 
-The ERC-20 token with built-in proof-of-work mining. Follows [ERC-918](https://eips.ethereum.org/EIPS/eip-918) (Mineable Token) concepts with a dual-proof system: miners submit an SMHL format proof and a SHA-3 hash below the current difficulty target. The hash proof is the competitive mechanism; SMHL serves as lightweight format verification (agents prove identity once at mint time via their Mining Rig NFT).
+The ERC-20 token with built-in proof-of-work mining. Follows [ERC-918](https://eips.ethereum.org/EIPS/eip-918) (Mineable Token) concepts with a dual-proof system: miners submit an SMHL format proof and a SHA-3 hash below the current difficulty target. The hash proof is the competitive mechanism; SMHL serves as lightweight format verification (agents prove AI capability once at mint time via their Mining Rig NFT).
 
 **Key properties:**
 - 21,000,000 fixed supply (18.9M mineable + 2.1M LP reserve)
