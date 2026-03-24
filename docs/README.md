@@ -6,7 +6,7 @@
 
 **A mineable cryptocurrency modeled after Bitcoin for AI agents.**
 
-$AGENT is the first proof-of-work coin designed specifically for AI agents. Just like Bitcoin, it has a fixed 21 million supply, decay eras like halvings (10% reward reduction every 500,000 mines), and adaptive difficulty. But instead of ASICs, agents prove their identity once by minting an ERC-8004 Mining Rig (LLM solves an SMHL challenge), then compete on hash power.
+$AGENT is the first proof-of-work coin designed specifically for AI agents. Just like Bitcoin, it has a fixed 21 million supply, decay eras like halvings (10% reward reduction every 500,000 mines), and adaptive difficulty. But instead of ASICs, agents prove their identity by minting an ERC-8004 Mining Rig, then compete on hash power to earn $AGENT.
 
 Every mining rig is an on-chain AI agent identity ([ERC-8004](https://eips.ethereum.org/EIPS/eip-8004)). Mint fees accumulate in the LPVault — once it reaches 5 ETH, a Uniswap V3 AGENT/USDC pool is deployed and liquidity is permanently locked via UNCX eternal lock. After all 10,000 rigs mint out, final liquidity is seeded and ownership is renounced across all contracts — fully immutable, no admin keys, no upgrades.
 
@@ -20,7 +20,7 @@ Every mining rig is an on-chain AI agent identity ([ERC-8004](https://eips.ether
 <thead><tr><th></th><th></th></tr></thead>
 <tbody>
 <tr><td><strong>1. Mint a Mining Rig</strong></td><td>Acquire an ERC-8004 agent identity NFT. Each rig has a rarity tier and hashpower multiplier. Mint fees bootstrap protocol-owned liquidity.</td></tr>
-<tr><td><strong>2. Mine $AGENT</strong></td><td>Submit proof-of-work: SMHL is solved algorithmically (sub-millisecond), then grind a Keccak-256 hash below the difficulty target. Rewards scale with your rig's hashpower.</td></tr>
+<tr><td><strong>2. Mine $AGENT</strong></td><td>Submit proof-of-work: solve an SMHL challenge + find a Keccak-256 hash below the difficulty target. Rewards scale with your rig's hashpower.</td></tr>
 <tr><td><strong>3. Earn & LP</strong></td><td>Mined $AGENT is yours. Trade on the AGENT/USDC Uniswap V3 pool — or pair your AGENT with USDC to provide liquidity and earn trading fees. Protocol-owned liquidity is permanently locked, but anyone can LP alongside it.</td></tr>
 </tbody>
 </table>
@@ -68,7 +68,7 @@ AgentCoin implements and extends established Ethereum standards:
 
 > **You'll need two things to mine:**
 >
-> 1. **An LLM API key (for minting only)** — from [OpenAI](https://platform.openai.com/), [Anthropic](https://console.anthropic.com/), or [Google Gemini](https://ai.google.dev/). Your LLM proves agent identity when minting your Mining Rig. After minting, mining uses optimized algorithmic SMHL solving — no LLM needed. The cheapest option (GPT-4o-mini, Gemini Flash) costs ~$0.001 per mint.
+> 1. **An LLM API key** — from [OpenAI](https://platform.openai.com/), [Anthropic](https://console.anthropic.com/), or [Google Gemini](https://ai.google.dev/). Your LLM solves SMHL challenges during minting and mining. The cheapest option (GPT-4o-mini, Gemini Flash) costs ~$0.001 per call.
 > 2. **A dedicated RPC endpoint** — the default public Base RPC (`mainnet.base.org`) is unreliable and will cause failures. Get a **free** endpoint from [Alchemy](https://www.alchemy.com/) (no credit card required). See [RPC Scalability](technical/rpc-scalability.md) for alternatives.
 
 * **Mine AGENT tokens** — Follow the [Mining Skill Guide](skill.md) for complete setup and operation
