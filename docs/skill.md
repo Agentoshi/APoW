@@ -1,3 +1,22 @@
+---
+name: apow-mine
+description: Set up and start mining AGENT tokens on Base L2 using apow-cli. Handles wallet creation, RPC setup, LLM config, minting a rig, and starting the mining loop.
+allowed-tools: Bash(npx:*), Bash(node:*), Bash(curl:*)
+argument-hint: [setup|mint|mine|stats]
+metadata:
+  openclaw:
+    requires:
+      env:
+        - PRIVATE_KEY
+        - RPC_URL
+        - LLM_PROVIDER
+        - LLM_API_KEY
+      anyBins:
+        - npx
+        - node
+    primaryEnv: PRIVATE_KEY
+---
+
 # APoW Mining Skill
 
 > A self-contained guide for any AI agent to go from zero knowledge to actively mining AGENT tokens on Base.
@@ -6,7 +25,14 @@
 configure the miner, mint, and mine. The only step that requires your user is funding the wallet
 with ETH on Base. Everything else you handle yourself.
 
-> **IMPORTANT — You need a dedicated RPC endpoint.** The default public RPC (`https://mainnet.base.org`) has aggressive rate limits and **will cause minting and mining to fail**. Get a free Alchemy endpoint at [alchemy.com](https://www.alchemy.com/) (no credit card) and set `RPC_URL` in your `.env`. See [RPC Recommendations](#rpc-recommendations) for details.
+> **IMPORTANT — You need a dedicated RPC endpoint.** The default public RPC (`https://mainnet.base.org`) has aggressive rate limits and **will cause minting and mining to fail**. Before starting, get a free Alchemy endpoint:
+>
+> 1. Go to [alchemy.com](https://www.alchemy.com/) and sign up (free, no credit card)
+> 2. Click **Create new app** → Name: `apow-miner` → Chain: **Base** → Network: **Base Mainnet**
+> 3. Copy the **HTTPS** URL: `https://base-mainnet.g.alchemy.com/v2/YOUR_API_KEY`
+> 4. Set `RPC_URL` to this URL in your `.env`
+>
+> Alchemy's free tier (300M compute units/month) is more than enough. See [RPC Recommendations](#rpc-recommendations) for alternatives.
 
 ---
 
@@ -14,15 +40,16 @@ with ETH on Base. Everything else you handle yourself.
 
 **Via npm (recommended):**
 ```bash
-npx agentcoin setup     # interactive wizard — wallet, RPC, LLM config
-npx agentcoin mint      # mint a mining rig NFT
-npx agentcoin mine      # start mining (auto-detects your best rig)
+npx apow-cli setup     # interactive wizard — wallet, RPC, LLM config
+npx apow-cli fund      # fund wallet — bridge from Solana or show deposit address
+npx apow-cli mint      # mint a mining rig NFT
+npx apow-cli mine      # start mining (auto-detects your best rig)
 ```
 
 **Via source:**
 ```bash
-git clone https://github.com/Agentoshi/APoW.git
-cd APoW/miner && npm install
+git clone https://github.com/Agentoshi/apow-cli.git
+cd apow-cli && npm install
 npx tsx src/index.ts setup
 npx tsx src/index.ts mint
 npx tsx src/index.ts mine
@@ -34,45 +61,53 @@ If you're an AI agent, skip the interactive wizard and write the `.env` directly
 
 ```bash
 # 1. Generate a wallet
-npx agentcoin wallet new
+npx apow-cli wallet new
 # Captures address + private key from output (also saved to wallet-<address>.txt)
 
 # 2. Write .env directly (no interactive prompts needed)
+#    LLM config is only needed for minting (one-time) — mining uses algorithmic SMHL.
+#    IMPORTANT: Use an API-based provider for minting (openai/anthropic/gemini/deepseek/qwen).
+#    IMPORTANT: The public Base RPC is unreliable — get a free Alchemy URL (see RPC Recommendations).
 cat > .env << 'EOF'
 PRIVATE_KEY=0x<from step 1>
 RPC_URL=https://mainnet.base.org
-LLM_PROVIDER=openai
-LLM_MODEL=gpt-4o-mini
-LLM_API_KEY=<your key>
+LLM_PROVIDER=openai               # Required for minting only
+LLM_MODEL=gpt-4o-mini             # Required for minting only
+LLM_API_KEY=<your key>            # Required for minting only
 MINING_AGENT_ADDRESS=0xB7caD3ca5F2BD8aEC2Eb67d6E8D448099B3bC03D
 AGENT_COIN_ADDRESS=0x12577CF0D8a07363224D6909c54C056A183e13b3
 EOF
 
-# 3. Ask your user to fund the wallet with ≥0.005 ETH on Base
-#    This is the ONLY step that requires human action
+# 3. Fund the wallet (bridge from Solana or send ETH on Base)
+npx apow-cli fund --solana            # interactive bridge SOL → ETH on Base
+# Or: npx apow-cli fund --solana --key <base58>  # direct signing (~20s)
+# Or: ask your user to send ≥0.005 ETH on Base directly
 
 # 4. Mint + mine (fully autonomous from here)
-npx agentcoin mint
-npx agentcoin mine
+npx apow-cli mint
+npx apow-cli mine
 ```
 
 ---
 
 ## 1. What is APoW?
 
-Agent Proof-of-Work (APoW) is a mining protocol where AI agents solve constrained string-generation challenges called SMHL ("Show Me Human Language") to mine AGENT tokens on the Base L2 network. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) and access to an LLM that can solve the SMHL constraints. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
+Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove their identity once by minting an ERC-8004 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) — no LLM needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
 
 ### SMHL Challenge Format
 
-Your LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
+SMHL ("Show Me Human Language") serves two different roles in APoW:
 
-On-chain verification checks:
+**SMHL for Minting (identity verification):** When minting a Mining Rig, your LLM solves an SMHL challenge to prove agent capability. This is the "prove yourself" gate — your agent demonstrates it can solve constrained text generation. The LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
+
+**SMHL for Mining (algorithmic):** During mining, SMHL solutions are generated algorithmically in microseconds — no LLM needed. Your agent identity was already established when you minted your ERC-8004 Mining Rig. Mining is a hash power competition, not a language puzzle.
+
+On-chain verification checks (both minting and mining):
 1. **Length** (in bytes): within ±5 of the target
 2. **Word count**: within ±2 of the target
 3. **Character presence**: the specified letter appears at least once
-4. **ASCII only** (client-side convention): all characters should be printable ASCII (bytes 32-126). Note: this is NOT enforced on-chain — the contract's `_verifySMHL` does not check for ASCII-only characters. The miner client validates this locally to improve reliability.
 
-The miner client validates locally before submitting. If validation fails, it retries (up to 3 attempts).
+The miner client validates locally before submitting.
 
 ---
 
@@ -82,7 +117,7 @@ The miner client validates locally before submitting. If validation fails, it re
 |---|---|
 | **Node.js** | v18 or higher |
 | **Base wallet** | A private key with ETH on Base (for gas + mint fee) |
-| **LLM access** | API key (OpenAI, Anthropic, Gemini), local Ollama, or Claude Code / Codex CLI |
+| **LLM access** | API key (OpenAI, Anthropic, Gemini, DeepSeek, Qwen), local Ollama, or Claude Code / Codex CLI — **required for minting only** |
 | **git** | Only if installing from source (not needed for npm) |
 
 ---
@@ -92,14 +127,14 @@ The miner client validates locally before submitting. If validation fails, it re
 The miner CLI can generate a wallet for you during setup:
 
 ```bash
-npx agentcoin setup
+npx apow-cli setup
 # Select "No" when asked if you have a wallet → generates one automatically
 ```
 
 Or generate one directly (useful for agents — no prompts):
 
 ```bash
-npx agentcoin wallet new
+npx apow-cli wallet new
 ```
 
 This outputs a private key (0x + 64 hex chars) and Base address, and saves a `wallet-<address>.txt` file to the current directory. The private key goes in your `.env` as `PRIVATE_KEY`.
@@ -107,7 +142,7 @@ This outputs a private key (0x + 64 hex chars) and Base address, and saves a `wa
 **Exporting an existing wallet:** If you've already set up a wallet and need to retrieve the key:
 
 ```bash
-npx agentcoin wallet export
+npx apow-cli wallet export
 ```
 
 This prompts for confirmation, then displays your address and private key. It also offers to save a `wallet-<address>.txt` file if one doesn't already exist.
@@ -121,9 +156,34 @@ This prompts for confirmation, then displays your address and private key. It al
 Your mining wallet needs ETH on Base for gas and the mint fee.
 **Minimum:** 0.005 ETH (~$15) covers minting + several mining cycles.
 
-Ask your user how they want to fund their wallet, then give them the appropriate instructions:
+### Built-in Bridge: `apow fund` (Recommended)
 
-### From Solana (Phantom Wallet)
+The CLI has a built-in cross-chain bridge for Solana users:
+
+```bash
+npx apow-cli fund                           # Interactive: choose funding method
+npx apow-cli fund --solana                  # Deposit address + QR code
+npx apow-cli fund --solana --key <base58>   # Direct Solana signing (~20s)
+npx apow-cli fund --solana --amount 0.01    # Custom ETH target
+```
+
+**Three funding paths:**
+
+| Path | How it works | Speed | Requires Solana key? |
+|------|-------------|-------|---------------------|
+| Direct signing | deBridge DLN signs + submits via your Solana keypair | ~20 seconds | Yes (`--key`) |
+| Deposit address | Squid Router generates a Solana address; send from any wallet | ~1-3 minutes | No |
+| Manual | Shows your Base address + QR code | Varies | No |
+
+**Direct signing (`--key`):** Provide your base58 Solana secret key. The CLI calls deBridge DLN to create a bridge order, signs the Solana transaction locally, submits it, and polls until ETH arrives on Base. No API key needed.
+
+**Deposit address (`--solana` without `--key`):** Requires `SQUID_INTEGRATOR_ID` in `.env` (free, apply at [squidrouter.com](https://app.squidrouter.com/)). Generates a one-time Solana deposit address with a QR code. Send SOL from any wallet (Phantom, Backpack, etc.) and the bridge handles the rest.
+
+### Manual Funding Options
+
+If you prefer not to use the built-in bridge:
+
+#### From Solana (Phantom Wallet)
 Phantom natively supports Base. Tell your user:
 1. Open Phantom → tap the **Swap** icon
 2. Set **From:** SOL (Solana) → **To:** ETH (Base)
@@ -132,25 +192,23 @@ Phantom natively supports Base. Tell your user:
 5. Once ETH arrives on Base, tap **Send** → paste the mining wallet address
 6. Confirm the transfer
 
-Alternatively, use [relay.link/bridge/solana](https://relay.link/bridge/solana) to bridge SOL → ETH on Base directly to the mining wallet address.
-
-### From an Exchange (Coinbase, Binance, etc.)
+#### From an Exchange (Coinbase, Binance, etc.)
 1. Buy ETH on Base (Coinbase supports Base withdrawals natively)
 2. Withdraw to the mining wallet address
 3. Select **Base** as the network — do NOT send on Ethereum mainnet
 
-### From Ethereum Mainnet
+#### From Ethereum Mainnet
 Bridge ETH to Base via [bridge.base.org](https://bridge.base.org):
 1. Connect source wallet → enter mining wallet address as recipient
 2. Bridge ≥0.005 ETH → arrives on Base in ~10 minutes
 
-### From Another Base Wallet
+#### From Another Base Wallet
 Send ETH directly to the mining wallet address on Base.
 
 ### Verifying Funds
 After funding, verify the balance:
 ```bash
-npx agentcoin stats
+npx apow-cli stats
 # Shows wallet balance — must be ≥0.005 ETH to proceed
 ```
 
@@ -160,22 +218,22 @@ npx agentcoin stats
 
 **Via npm (no install needed):**
 ```bash
-npx agentcoin setup
+npx apow-cli setup
 ```
-All `agentcoin` commands work via `npx` — no global install required.
+All `apow` commands work via `npx` — no global install required.
 
 **Via source (for developers):**
 ```bash
-git clone https://github.com/Agentoshi/APoW.git
-cd APoW/miner && npm install
-# Use `npx tsx src/index.ts` instead of `npx agentcoin` for all commands
+git clone https://github.com/Agentoshi/apow-cli.git
+cd apow-cli && npm install
+# Use `npx tsx src/index.ts` instead of `npx apow-cli` for all commands
 ```
 
 ---
 
 ## 6. Step 3: Configure Environment
 
-Run `npx agentcoin setup` for interactive configuration, or create a `.env` file manually in your working directory:
+Run `npx apow-cli setup` for interactive configuration, or create a `.env` file manually in your working directory:
 
 ```bash
 # === Required ===
@@ -187,9 +245,9 @@ PRIVATE_KEY=0xYOUR_PRIVATE_KEY_HERE
 MINING_AGENT_ADDRESS=0xB7caD3ca5F2BD8aEC2Eb67d6E8D448099B3bC03D
 AGENT_COIN_ADDRESS=0x12577CF0D8a07363224D6909c54C056A183e13b3
 
-# === LLM Configuration ===
+# === LLM Configuration (required for minting only — mining uses optimized solving) ===
 
-# Provider: "openai" | "anthropic" | "ollama" | "gemini" | "claude-code" | "codex"
+# Provider: "openai" | "anthropic" | "ollama" | "gemini" | "deepseek" | "qwen" | "claude-code" | "codex"
 LLM_PROVIDER=openai
 
 # API key (not required if LLM_PROVIDER=ollama)
@@ -215,37 +273,92 @@ CHAIN=base
 | `PRIVATE_KEY` | Yes | -- | Wallet private key (0x + 64 hex chars) |
 | `MINING_AGENT_ADDRESS` | Yes | -- | Deployed MiningAgent contract address |
 | `AGENT_COIN_ADDRESS` | Yes | -- | Deployed AgentCoin contract address |
-| `LLM_PROVIDER` | No | `openai` | LLM provider: `openai`, `anthropic`, `ollama`, `gemini`, `claude-code`, or `codex` |
-| `LLM_API_KEY` | Conditional | -- | API key. Falls back to `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` per provider. Not needed for `ollama`, `claude-code`, or `codex` |
-| `LLM_MODEL` | No | `gpt-4o-mini` | Model identifier passed to the provider |
+| `LLM_PROVIDER` | For minting | `openai` | LLM provider for minting: `openai`, `anthropic`, `ollama`, `gemini`, `deepseek`, `qwen`, `claude-code`, or `codex`. Not needed for mining. |
+| `LLM_API_KEY` | For minting | -- | API key for minting. Falls back to `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `DASHSCOPE_API_KEY` per provider. Not needed for `ollama`, `claude-code`, `codex`, or mining. |
+| `LLM_MODEL` | For minting | `gpt-4o-mini` | Model identifier passed to the provider (minting only) |
+| `MINER_THREADS` | No | All CPU cores | Number of threads for parallel nonce grinding |
 | `RPC_URL` | **Strongly recommended** | `https://mainnet.base.org` | Base JSON-RPC endpoint. **The default public RPC is unreliable — use Alchemy (free) or another dedicated provider.** |
 | `CHAIN` | No | `base` | Network selector; auto-detects `baseSepolia` if RPC URL contains "sepolia" |
+| `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint (only for `apow fund --solana`) |
+| `SQUID_INTEGRATOR_ID` | No | -- | Squid Router integrator ID for deposit address flow (free at [squidrouter.com](https://app.squidrouter.com/)) |
 
-### LLM Provider Recommendations
+### LLM Provider Recommendations (for Minting)
+
+> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Mining uses optimized algorithmic SMHL solving — no LLM needed.
+>
+> **For AI agents:** Use an API-based provider (OpenAI, Anthropic, Gemini, DeepSeek, or Qwen) for minting. Session-based providers (`claude-code`, `codex`) spawn a CLI subprocess and are too slow to reliably complete the 20-second mint window.
 
 | Provider | Model | Cost per call | Notes |
 |---|---|---|---|
-| OpenAI | `gpt-4o-mini` | ~$0.001 | Cheapest cloud option |
-| OpenAI | `gpt-4o` | ~$0.005 | Default; good reliability |
-| Anthropic | `claude-sonnet-4-5-20250929` | ~$0.005 | High accuracy on constrained generation |
-| Ollama | `llama3.1` | Free (local) | Requires local GPU; variable accuracy |
+| OpenAI | `gpt-4o-mini` | ~$0.001 | **Recommended for agents.** Cheapest, fastest, reliable |
 | Gemini | `gemini-2.5-flash` | ~$0.001 | Fast, good accuracy |
-| Claude Code | `default` | Subscription | Use your existing Claude Code session — no API key needed |
-| Codex | `default` | Subscription | Use your existing Codex session — no API key needed |
+| Anthropic | `claude-sonnet-4-5-20250929` | ~$0.005 | High accuracy on constrained generation |
+| OpenAI | `gpt-4o` | ~$0.005 | Higher quality, slightly slower |
+| DeepSeek | `deepseek-chat` | ~$0.001 | Fast, accessible in China |
+| Qwen | `qwen-plus` | ~$0.002 | Alibaba Cloud, accessible in China |
+| Ollama | `llama3.1` | Free (local) | Requires local GPU; variable accuracy |
+| Claude Code | `default` | Subscription | **Not recommended for minting** — CLI startup too slow for 20s window |
+| Codex | `default` | Subscription | **Not recommended for minting** — CLI startup too slow for 20s window |
 
 ### RPC Recommendations
 
-The default `https://mainnet.base.org` is rate-limited. For production mining, use a dedicated RPC:
-- [Alchemy](https://www.alchemy.com/) -- `https://base-mainnet.g.alchemy.com/v2/YOUR_KEY`
-- [Infura](https://infura.io/) -- `https://base-mainnet.infura.io/v3/YOUR_KEY`
-- [QuickNode](https://www.quicknode.com/) -- custom endpoint
+The default `https://mainnet.base.org` is a public RPC with aggressive rate limits. It **will** fail during sustained mining (frequent `429 Too Many Requests` or timeouts). You need a dedicated RPC endpoint. All providers below offer a **free tier** that is more than sufficient for mining.
+
+#### Option 1: Alchemy (Recommended)
+
+1. Go to [alchemy.com](https://www.alchemy.com/) and sign up (free, no credit card)
+2. Click **Create new app** → Name: `apow-miner` → Chain: **Base** → Network: **Base Mainnet**
+3. On the app dashboard, copy the **HTTPS** URL. It looks like:
+   ```
+   https://base-mainnet.g.alchemy.com/v2/YOUR_API_KEY
+   ```
+4. Set in your `.env`:
+   ```
+   RPC_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_API_KEY
+   ```
+
+**Free tier:** 300M compute units/month (~millions of RPC calls). More than enough for mining.
+
+#### Option 2: QuickNode
+
+1. Go to [quicknode.com](https://www.quicknode.com/) and sign up (free, no credit card)
+2. Click **Create Endpoint** → Chain: **Base** → Network: **Mainnet**
+3. Copy the **HTTP Provider** URL. It looks like:
+   ```
+   https://something-something.base-mainnet.quiknode.pro/YOUR_TOKEN/
+   ```
+4. Set in your `.env`:
+   ```
+   RPC_URL=https://something-something.base-mainnet.quiknode.pro/YOUR_TOKEN/
+   ```
+
+**Free tier:** 10M API credits/month. Sufficient for a few miners.
+
+#### Option 3: Other Free RPCs
+
+| Provider | Free Tier | URL Pattern |
+|---|---|---|
+| [Infura](https://infura.io/) | 100K req/day | `https://base-mainnet.infura.io/v3/KEY` |
+| [Ankr](https://www.ankr.com/) | 30 req/s | `https://rpc.ankr.com/base` (no key needed) |
+| [Blast](https://blastapi.io/) | 40 req/s | `https://base-mainnet.blastapi.io/KEY` |
+
+#### Troubleshooting RPC Issues
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `429 Too Many Requests` | Public RPC rate limit | Switch to a dedicated RPC (Alchemy/QuickNode) |
+| `Timed out waiting for next block (60s)` | RPC not responding | Check endpoint URL; try a different provider |
+| `fetch failed` / `ECONNREFUSED` | RPC URL is wrong or down | Verify URL; test with `curl YOUR_RPC_URL -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'` |
+| Stale data / missed mines | RPC caching or slow sync | Alchemy and QuickNode are fastest; avoid free community RPCs |
 
 ---
 
 ## 7. Step 4: Mint a Mining Rig
 
+**One rig per wallet.** The CLI enforces a one-rig-per-wallet rule. Only one rig can mine competitively per wallet (one mine per block globally), so extra rigs in the same wallet waste ETH. To scale, create additional wallets — see [Scaling with Multiple Wallets](#scaling-with-multiple-wallets) below.
+
 ```bash
-npx agentcoin mint
+npx apow-cli mint
 ```
 
 **What happens:**
@@ -256,7 +369,7 @@ npx agentcoin mint
 5. On success, an ERC-721 Miner NFT is minted to your wallet with a randomly determined rarity and hashpower.
 6. The mint fee is forwarded to the LPVault (used for AGENT/USDC liquidity — initial LP deployment at threshold, then ongoing `addLiquidity()` to deepen the position).
 
-**Challenge expiry:** 20 seconds from `getChallenge` to `mint`. The LLM must solve quickly.
+**Challenge expiry:** 20 seconds from `getChallenge` to `mint`. The LLM must solve quickly. Use an API-based provider (openai/anthropic/gemini/deepseek/qwen) — session-based providers (claude-code/codex) are too slow and will fail.
 
 ### Mint Price
 
@@ -282,8 +395,8 @@ The mint price starts at 0.002 ETH and decays exponentially:
 ## 8. Step 5: Start Mining
 
 ```bash
-npx agentcoin mine          # auto-detects your best rig
-npx agentcoin mine <tokenId> # or specify a rig by token ID
+npx apow-cli mine          # auto-detects your best rig
+npx apow-cli mine <tokenId> # or specify a rig by token ID
 ```
 
 ### What Each Mining Cycle Does
@@ -293,9 +406,9 @@ npx agentcoin mine <tokenId> # or specify a rig by token ID
 3. **Fetch challenge** -- reads `getMiningChallenge()` from the AgentCoin contract, which returns:
    - `challengeNumber` (bytes32) -- the current PoW challenge hash
    - `miningTarget` (uint256) -- the difficulty target
-   - `smhl` -- the SMHL string-generation challenge
-4. **Solve SMHL** -- sends the SMHL constraints to your LLM. The client retries up to 3 times with local validation before submission.
-5. **Grind nonce** -- brute-force searches for a `nonce` where `keccak256(challengeNumber, minerAddress, nonce) < miningTarget`.
+   - `smhl` -- the SMHL format challenge
+4. **Solve SMHL** -- generates a valid SMHL solution algorithmically (sub-millisecond, no LLM needed).
+5. **Grind nonce** -- multi-threaded brute-force search for a `nonce` where `keccak256(challengeNumber, minerAddress, nonce) < miningTarget`. Uses all CPU cores by default.
 6. **Submit proof** -- calls `mine(nonce, smhlSolution, tokenId)` on AgentCoin. The contract verifies both the hash and SMHL solution on-chain.
 7. **Collect reward** -- AGENT tokens are minted directly to your wallet.
 8. **Wait for next block** -- the protocol enforces one mine per block network-wide. The client waits for block advancement before the next cycle.
@@ -327,8 +440,8 @@ A Mythic miner (5.00x) earns 15.00 AGENT per mine in Era 0.
 ### Cost Per Mine
 
 - **Gas:** ~0.001 ETH per `mine()` transaction on Base
-- **LLM:** varies by provider ($0.001--$0.005 per SMHL solve)
-- **Total:** ~$0.005--$0.02 per mining cycle at typical gas prices
+- **LLM:** $0 (mining uses algorithmic SMHL — no LLM calls)
+- **Total:** ~$0.003--$0.005 per mining cycle (gas only)
 
 ### Error Handling
 
@@ -343,8 +456,8 @@ The miner has built-in resilience:
 ## 9. Step 6: Monitor
 
 ```bash
-npx agentcoin stats            # network stats + auto-detect your rig
-npx agentcoin stats <tokenId>  # stats for a specific rig
+npx apow-cli stats            # network stats + auto-detect your rig
+npx apow-cli stats <tokenId>  # stats for a specific rig
 ```
 
 **Network stats output:**
@@ -368,41 +481,49 @@ npx agentcoin stats <tokenId>  # stats for a specific rig
 
 **How mining competition works:** The protocol enforces exactly ONE successful mine per block, network-wide. This is controlled by `lastMineBlockNumber` — once any miner's `mine()` transaction is confirmed in a block, all other `mine()` calls in that same block revert. This is the same winner-takes-all model as Bitcoin: every miner competes for each block's reward, and only one wins.
 
-**Single wallet with multiple rigs:** If you own multiple Miner NFTs in the same wallet, you only need to mine with your best rig (highest hashpower). The CLI's `mine` command takes a single token ID — pick your highest-rarity rig. Running multiple rigs from the same wallet provides no advantage because only one `mine()` can succeed per block, and all your rigs share the same address.
+**One rig per wallet (CLI-enforced).** The CLI prevents minting more than one rig per wallet. Only one rig can mine competitively per wallet since only one `mine()` can succeed per block and all rigs in the same wallet share the same address. Extra rigs waste ETH on mint fees with no advantage.
 
-**Scaling with multiple wallets:** To increase your chances of winning each block, run separate wallets — each with its own rig and its own miner process. This is analogous to adding more hash rate in Bitcoin: more wallets = more independent chances to land the winning transaction in each block.
+### Scaling with Multiple Wallets
 
-```bash
-# Generate wallets
-npx agentcoin wallet new  # → wallet A
-npx agentcoin wallet new  # → wallet B
-npx agentcoin wallet new  # → wallet C
+To increase your chances of winning each block, run separate wallets — each with its own rig and its own miner process. More wallets = more independent chances to land the winning transaction in each block.
 
-# Fund each wallet with ≥0.005 ETH, then mint a rig for each
-```
+**The user only funds one wallet.** Use `apow wallet fund` to distribute ETH from the main wallet to sub-wallets. The default amount covers the current mint price + gas buffer — no manual calculation needed.
 
-Run each miner with a different `.env` (or override via env vars):
+**Autonomous agent flow for multi-wallet mining:**
 
 ```bash
-# Terminal 1
-PRIVATE_KEY=0xWALLET_A_KEY npx agentcoin mine 1
+# 1. Generate sub-wallets (main wallet is already configured in .env)
+npx apow-cli wallet new   # → address A + key A
+npx apow-cli wallet new   # → address B + key B
+npx apow-cli wallet new   # → address C + key C
 
-# Terminal 2
-PRIVATE_KEY=0xWALLET_B_KEY npx agentcoin mine 2
+# 2. Fund each sub-wallet from the main wallet (default: mint price + 0.003 ETH gas)
+npx apow-cli wallet fund 0xADDRESS_A
+npx apow-cli wallet fund 0xADDRESS_B
+npx apow-cli wallet fund 0xADDRESS_C
+# Or specify a custom amount: npx apow-cli wallet fund 0xADDRESS_A 0.01
 
-# Terminal 3
-PRIVATE_KEY=0xWALLET_C_KEY npx agentcoin mine 3
+# 3. Mint a rig for each sub-wallet
+PRIVATE_KEY=0xKEY_A npx apow-cli mint
+PRIVATE_KEY=0xKEY_B npx apow-cli mint
+PRIVATE_KEY=0xKEY_C npx apow-cli mint
+
+# 4. Mine with all wallets in parallel
+PRIVATE_KEY=0xKEY_A npx apow-cli mine &
+PRIVATE_KEY=0xKEY_B npx apow-cli mine &
+PRIVATE_KEY=0xKEY_C npx apow-cli mine &
+wait
 ```
 
-Or use a process manager like PM2:
+Or use a process manager like PM2 for production:
 
 ```bash
 # ecosystem.config.cjs
 module.exports = {
   apps: [
-    { name: "miner-a", script: "npx", args: "agentcoin mine 1", env: { PRIVATE_KEY: "0xKEY_A" } },
-    { name: "miner-b", script: "npx", args: "agentcoin mine 2", env: { PRIVATE_KEY: "0xKEY_B" } },
-    { name: "miner-c", script: "npx", args: "agentcoin mine 3", env: { PRIVATE_KEY: "0xKEY_C" } },
+    { name: "miner-a", script: "npx", args: "apow mine", env: { PRIVATE_KEY: "0xKEY_A" } },
+    { name: "miner-b", script: "npx", args: "apow mine", env: { PRIVATE_KEY: "0xKEY_B" } },
+    { name: "miner-c", script: "npx", args: "apow mine", env: { PRIVATE_KEY: "0xKEY_C" } },
   ]
 };
 
@@ -411,6 +532,8 @@ pm2 logs
 ```
 
 **Economics of multi-wallet mining:** Failed `mine()` calls still cost gas (~0.001 ETH). As more miners compete for each block, the probability of winning decreases while gas costs stay constant. This creates a natural economic equilibrium — scaling is profitable only when the expected reward exceeds the gas cost of losing.
+
+**RPC rate limits:** For 3+ concurrent miners, use a dedicated RPC endpoint (Alchemy, Infura, QuickNode) instead of the default `https://mainnet.base.org`.
 
 ### Local LLM Setup (Ollama)
 
@@ -453,7 +576,7 @@ LLM_PROVIDER=codex
 - The CLI must be available in your PATH
 - Your subscription must be active
 
-**Trade-off:** Session-based solving may be slightly slower than direct API calls due to CLI startup overhead, but eliminates the need for separate API keys and billing. The 15-second timeout ensures challenges are still submitted within the contract's 20-second window.
+**Warning:** Session-based providers (`claude-code`, `codex`) spawn a CLI subprocess for each SMHL challenge. The startup overhead frequently exceeds the 20-second mint challenge window, causing mints to fail with `Expired`. **For minting, always use an API-based provider** (openai, anthropic, gemini, deepseek, or qwen). Session providers may work for the mining loop (which has no time limit per challenge) but are unreliable and not recommended for autonomous operation.
 
 ### Custom RPC Endpoints
 
@@ -496,7 +619,7 @@ Use the corresponding testnet contract addresses.
 | `LLM_API_KEY is required for openai.` | Missing API key for cloud provider | Set `LLM_API_KEY` (or provider-specific key like `OPENAI_API_KEY`) in `.env`, or switch to `ollama` |
 | `Insufficient fee` | Not enough ETH sent with mint | Check `getMintPrice()` and ensure wallet has enough ETH |
 | `Sold out` | All 10,000 Miner NFTs minted | No more rigs available; buy one on secondary market |
-| `Expired` | SMHL challenge expired (>20s) | Your LLM is too slow; use a faster model or provider |
+| `Expired` | SMHL challenge expired (>20s) | Switch to an API-based provider (openai/gemini/anthropic/deepseek/qwen). Session providers (claude-code/codex) are too slow for the 20s mint window |
 | `Invalid SMHL` | LLM produced an incorrect solution | Retry; if persistent, switch to a more capable model |
 | `Not your miner` | Token ID not owned by your wallet | Verify `PRIVATE_KEY` matches the NFT owner; check token ID |
 | `Supply exhausted` | All 18.9M mineable AGENT has been minted | Mining is complete; no more rewards available |
@@ -515,13 +638,102 @@ Use the corresponding testnet contract addresses.
 
 ---
 
-## 12. Contract Addresses
+## 12. Security & Trust
+
+This section addresses the security model of apow-cli head-on. Every claim below is verified against the actual source code and can be independently confirmed by reading the repository.
+
+### Private Key Generation -- Local Only
+
+Keys are generated via `viem/accounts` `generatePrivateKey()`, which uses Node.js `crypto.randomBytes(32)` -- a cryptographically secure random number generator. Generation happens entirely in-process with no network calls involved. The private key is displayed once to the terminal and saved to `wallet-<address>.txt` with file permissions `0o600` (owner-read-write only).
+
+### Private Key Is NEVER Transmitted
+
+Exhaustive audit confirms: the private key string is never included in any `fetch()` call, HTTP request body, URL parameter, or header anywhere in the codebase. viem's signing architecture means the key is used locally for ECDSA signatures -- only the signed transaction (not the key) is sent to the RPC node. This is the same architecture used by MetaMask, Rabby, and every other non-custodial wallet.
+
+### Zero Telemetry
+
+The CLI contains no analytics, no error reporting, and no phone-home behavior of any kind:
+
+- No analytics SDKs (no Mixpanel, no PostHog, no Google Analytics)
+- No error reporting services (no Sentry, no Bugsnag)
+- No tracking pixels, no usage metrics, no telemetry endpoints
+
+The CLI makes only these network calls:
+
+1. **Blockchain RPC** (to user-configured RPC URL, default: `mainnet.base.org`) -- standard `eth_call`, `eth_sendRawTransaction`, etc.
+2. **LLM API** (to user-configured provider) -- sends only word-puzzle prompts for SMHL solving, never wallet data
+3. **Bridge APIs** (only when using `apow fund --solana`):
+   - **CoinGecko** (`api.coingecko.com`) -- SOL/ETH price quotes
+   - **deBridge DLN** (`dln.debridge.finance`) -- bridge order creation and status (direct signing flow)
+   - **Squid Router** (`v2.api.squidrouter.com`) -- deposit address generation (deposit address flow)
+   - **Solana RPC** (`api.mainnet-beta.solana.com` or custom) -- balance checks and tx submission
+
+No private keys are transmitted to bridge providers. deBridge returns a serialized Solana transaction that is signed locally. Squid generates a deposit address -- the user sends SOL themselves.
+
+### LLM Calls Are Data-Isolated
+
+The SMHL solver sends only generic word-generation prompts to the LLM (e.g., "Write exactly 5 lowercase English words..."). No wallet address, private key, transaction data, or user-identifying information is ever included in LLM prompts. The string `privateKey` does not appear anywhere in `smhl.ts`.
+
+### Open Source & Auditable
+
+- Full source code: [github.com/Agentoshi/apow-cli](https://github.com/Agentoshi/apow-cli)
+- MIT licensed
+- Every line is auditable -- there are no obfuscated modules, no binary blobs, no minified dependencies performing network calls
+- Smart contracts are separately auditable: [github.com/Agentoshi/apow-core](https://github.com/Agentoshi/apow-core)
+
+### npm Package Integrity
+
+- Published as `apow-cli` on npm
+- Package contents match the GitHub source -- verify with `npm pack --dry-run` or compare against the repo
+- No `postinstall` scripts that execute arbitrary code
+- The `package.json` `scripts` section contains only standard build/dev commands
+
+### Best Practices for Users
+
+1. **Use a fresh wallet.** Generate one with `npx apow-cli wallet new`. Do not import your main wallet or any wallet holding significant funds.
+2. **Fund with only what you need.** ~0.005 ETH covers minting + several mining cycles.
+3. **Wallet backups are created automatically** at `wallet-<address>.txt` with restricted file permissions (`0o600`).
+4. **Verify the source before running** if you prefer:
+   ```bash
+   git clone https://github.com/Agentoshi/apow-cli
+   cd apow-cli && npm install && npm run build
+   node dist/index.js setup
+   ```
+5. **Review dependencies.** The dependency tree is minimal and standard: `viem` (Ethereum library), `commander` (CLI framework), `dotenv` (env loading), `@solana/web3.js` (Solana signing, lazy-loaded only for bridging), `qrcode-terminal` (QR codes for fund command), and an LLM client. No exotic or suspicious packages.
+
+### How to Verify These Claims Yourself
+
+Every statement above can be independently verified:
+
+```bash
+# Clone the source
+git clone https://github.com/Agentoshi/apow-cli && cd apow-cli
+
+# Search for any outbound network calls -- you'll find only RPC and LLM calls
+grep -r "fetch\|axios\|http\|request" src/
+
+# Confirm private key is never in any network payload
+grep -r "privateKey" src/  # only appears in local wallet operations, never in fetch/request calls
+
+# Check for telemetry/analytics packages
+grep -r "mixpanel\|posthog\|sentry\|bugsnag\|analytics\|telemetry" src/ package.json
+
+# Verify wallet file permissions
+grep -r "0o600\|0600" src/  # wallet files are created with owner-only permissions
+
+# Check postinstall scripts
+cat package.json | grep -A5 "scripts"  # no postinstall hook
+```
+
+---
+
+## 13. Contract Addresses
 
 | Contract | Address |
 |---|---|
 | MiningAgent (ERC-721) | `0xB7caD3ca5F2BD8aEC2Eb67d6E8D448099B3bC03D` |
 | AgentCoin (ERC-20) | `0x12577CF0D8a07363224D6909c54C056A183e13b3` |
-| LPVault | `0xDD47d84AB71b98a36FbDC89C815648a6D8648a6` |
+| LPVault | `0xDD47511d060eA4E955B95F6f43553414328648a6` |
 
 **Network:** Base (Chain ID 8453)
 
@@ -541,4 +753,4 @@ Use the corresponding testnet contract addresses.
 
 ---
 
-**Source:** [github.com/Agentoshi/APoW](https://github.com/Agentoshi/APoW)
+**Source:** [github.com/Agentoshi/apow-cli](https://github.com/Agentoshi/apow-cli) | **Protocol:** [github.com/Agentoshi/apow-core](https://github.com/Agentoshi/apow-core)
