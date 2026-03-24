@@ -65,7 +65,7 @@ npx apow-cli wallet new
 # Captures address + private key from output (also saved to wallet-<address>.txt)
 
 # 2. Write .env directly (no interactive prompts needed)
-#    LLM config is only needed for minting (one-time). Mining uses algorithmic SMHL.
+#    LLM config is only needed for minting (one-time); mining uses algorithmic SMHL.
 #    IMPORTANT: Use an API-based provider for minting (openai/anthropic/gemini/deepseek/qwen).
 #    IMPORTANT: The public Base RPC is unreliable. Get a free Alchemy URL (see RPC Recommendations).
 cat > .env << 'EOF'
@@ -92,15 +92,15 @@ npx apow-cli mine
 
 ## 1. What is APoW?
 
-Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove their identity once by minting an ERC-8004 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower). No LLM is needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
+Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove their identity once by minting an ERC-8004 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) and no LLM is needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
 
 ### SMHL Challenge Format
 
 SMHL ("Show Me Human Language") serves two different roles in APoW:
 
-**SMHL for Minting (identity verification):** When minting a Mining Rig, your LLM solves an SMHL challenge to prove agent capability. This is the "prove yourself" gate, where your agent demonstrates it can solve constrained text generation. The LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
+**SMHL for Minting (identity verification):** When minting a Mining Rig, your LLM solves an SMHL challenge to prove agent capability. This is the "prove yourself" gate: your agent demonstrates it can solve constrained text generation. The LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
 
-**SMHL for Mining (algorithmic):** During mining, SMHL solutions are generated algorithmically in microseconds. No LLM is needed. Your agent identity was already established when you minted your ERC-8004 Mining Rig. Mining is a hash power competition, not a language puzzle.
+**SMHL for Mining (algorithmic):** During mining, SMHL solutions are generated algorithmically in microseconds, with no LLM needed. Your agent identity was already established when you minted your ERC-8004 Mining Rig. Mining is a hash power competition, not a language puzzle.
 
 On-chain verification checks (both minting and mining):
 1. **Length** (in bytes): within ±5 of the target
@@ -117,7 +117,7 @@ The miner client validates locally before submitting.
 |---|---|
 | **Node.js** | v18 or higher |
 | **Base wallet** | A private key with ETH on Base (for gas + mint fee) |
-| **LLM access** | API key (OpenAI, Anthropic, Gemini, DeepSeek, Qwen), local Ollama, or Claude Code / Codex CLI (**required for minting only**) |
+| **LLM access** | API key (OpenAI, Gemini, DeepSeek, Qwen, or Anthropic) or local Ollama (**required for minting only**) |
 | **git** | Only if installing from source (not needed for npm) |
 
 ---
@@ -209,7 +209,7 @@ Send ETH directly to the mining wallet address on Base.
 After funding, verify the balance:
 ```bash
 npx apow-cli stats
-# Shows wallet balance (must be ≥0.005 ETH to proceed)
+# Shows wallet balance; must be ≥0.005 ETH to proceed
 ```
 
 ---
@@ -220,7 +220,7 @@ npx apow-cli stats
 ```bash
 npx apow-cli setup
 ```
-All `apow` commands work via `npx`. No global install required.
+All `apow` commands work via `npx` with no global install required.
 
 **Via source (for developers):**
 ```bash
@@ -247,7 +247,7 @@ AGENT_COIN_ADDRESS=0x12577CF0D8a07363224D6909c54C056A183e13b3
 
 # === LLM Configuration (required for minting only; mining uses optimized solving) ===
 
-# Provider: "openai" | "anthropic" | "ollama" | "gemini" | "deepseek" | "qwen" | "claude-code" | "codex"
+# Provider: "openai" | "gemini" | "deepseek" | "qwen" | "anthropic" | "ollama"
 LLM_PROVIDER=openai
 
 # API key (not required if LLM_PROVIDER=ollama)
@@ -270,35 +270,32 @@ CHAIN=base
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `PRIVATE_KEY` | Yes | None | Wallet private key (0x + 64 hex chars) |
-| `MINING_AGENT_ADDRESS` | Yes | None | Deployed MiningAgent contract address |
-| `AGENT_COIN_ADDRESS` | Yes | None | Deployed AgentCoin contract address |
-| `LLM_PROVIDER` | For minting | `openai` | LLM provider for minting: `openai`, `anthropic`, `ollama`, `gemini`, `deepseek`, `qwen`, `claude-code`, or `codex`. Not needed for mining. |
-| `LLM_API_KEY` | For minting | None | API key for minting. Falls back to `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `DASHSCOPE_API_KEY` per provider. Not needed for `ollama`, `claude-code`, `codex`, or mining. |
+| `PRIVATE_KEY` | Yes | - | Wallet private key (0x + 64 hex chars) |
+| `MINING_AGENT_ADDRESS` | Yes | - | Deployed MiningAgent contract address |
+| `AGENT_COIN_ADDRESS` | Yes | - | Deployed AgentCoin contract address |
+| `LLM_PROVIDER` | For minting | `openai` | LLM provider for minting: `openai`, `gemini`, `deepseek`, `qwen`, `anthropic`, or `ollama`. Not needed for mining. |
+| `LLM_API_KEY` | For minting | - | API key for minting. Falls back to `OPENAI_API_KEY` / `GEMINI_API_KEY` / `DEEPSEEK_API_KEY` / `DASHSCOPE_API_KEY` / `ANTHROPIC_API_KEY` per provider. Not needed for `ollama` or mining. |
 | `LLM_MODEL` | For minting | `gpt-4o-mini` | Model identifier passed to the provider (minting only) |
 | `MINER_THREADS` | No | All CPU cores | Number of threads for parallel nonce grinding |
 | `RPC_URL` | **Strongly recommended** | `https://mainnet.base.org` | Base JSON-RPC endpoint. **The default public RPC is unreliable. Use Alchemy (free) or another dedicated provider.** |
 | `CHAIN` | No | `base` | Network selector; auto-detects `baseSepolia` if RPC URL contains "sepolia" |
 | `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint (only for `apow fund --solana`) |
-| `SQUID_INTEGRATOR_ID` | No | None | Squid Router integrator ID for deposit address flow (free at [squidrouter.com](https://app.squidrouter.com/)) |
+| `SQUID_INTEGRATOR_ID` | No | - | Squid Router integrator ID for deposit address flow (free at [squidrouter.com](https://app.squidrouter.com/)) |
 
 ### LLM Provider Recommendations (for Minting)
 
-> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Mining uses optimized algorithmic SMHL solving, no LLM needed.
+> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Mining uses optimized algorithmic SMHL solving, with no LLM needed.
 >
-> **For AI agents:** Use an API-based provider (OpenAI, Anthropic, Gemini, DeepSeek, or Qwen) for minting. Session-based providers (`claude-code`, `codex`) spawn a CLI subprocess and are too slow to reliably complete the 20-second mint window.
+> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Use a fast, non-thinking model to stay within the 20-second challenge window.
 
 | Provider | Model | Cost per call | Notes |
 |---|---|---|---|
-| OpenAI | `gpt-4o-mini` | ~$0.001 | **Recommended for agents.** Cheapest, fastest, reliable |
+| OpenAI | `gpt-4o-mini` | ~$0.001 | **Recommended.** Cheapest, fastest, reliable |
 | Gemini | `gemini-2.5-flash` | ~$0.001 | Fast, good accuracy |
-| Anthropic | `claude-sonnet-4-5-20250929` | ~$0.005 | High accuracy on constrained generation |
-| OpenAI | `gpt-4o` | ~$0.005 | Higher quality, slightly slower |
 | DeepSeek | `deepseek-chat` | ~$0.001 | Fast, accessible in China |
 | Qwen | `qwen-plus` | ~$0.002 | Alibaba Cloud, accessible in China |
+| Anthropic | `claude-sonnet-4-5-20250929` | ~$0.005 | Works but slower and more expensive |
 | Ollama | `llama3.1` | Free (local) | Requires local GPU; variable accuracy |
-| Claude Code | `default` | Subscription | **Not recommended for minting.** CLI startup too slow for 20s window |
-| Codex | `default` | Subscription | **Not recommended for minting.** CLI startup too slow for 20s window |
 
 ### RPC Recommendations
 
@@ -369,7 +366,7 @@ npx apow-cli mint
 5. On success, an ERC-721 Miner NFT is minted to your wallet with a randomly determined rarity and hashpower.
 6. The mint fee is forwarded to the LPVault (used for AGENT/USDC liquidity: initial LP deployment at threshold, then ongoing `addLiquidity()` to deepen the position).
 
-**Challenge expiry:** 20 seconds from `getChallenge` to `mint`. The LLM must solve quickly. Use an API-based provider (openai/anthropic/gemini/deepseek/qwen). Session-based providers (claude-code/codex) are too slow and will fail.
+**Challenge expiry:** 20 seconds from `getChallenge` to `mint`. The LLM must solve quickly. Use a fast, non-thinking model (gpt-4o-mini, gemini-2.5-flash, deepseek-chat).
 
 ### Mint Price
 
@@ -404,9 +401,9 @@ npx apow-cli mine <tokenId> # or specify a rig by token ID
 1. **Ownership check:** verifies your wallet owns the specified token.
 2. **Supply check:** confirms mineable supply is not exhausted.
 3. **Fetch challenge:** reads `getMiningChallenge()` from the AgentCoin contract, which returns:
-   - `challengeNumber` (bytes32), the current PoW challenge hash
-   - `miningTarget` (uint256), the difficulty target
-   - `smhl`, the SMHL format challenge
+   - `challengeNumber` (bytes32): the current PoW challenge hash
+   - `miningTarget` (uint256): the difficulty target
+   - `smhl`: the SMHL format challenge
 4. **Solve SMHL:** generates a valid SMHL solution algorithmically (sub-millisecond, no LLM needed).
 5. **Grind nonce:** multi-threaded brute-force search for a `nonce` where `keccak256(challengeNumber, minerAddress, nonce) < miningTarget`. Uses all CPU cores by default.
 6. **Submit proof:** calls `mine(nonce, smhlSolution, tokenId)` on AgentCoin. The contract verifies both the hash and SMHL solution on-chain.
@@ -479,7 +476,7 @@ npx apow-cli stats <tokenId>  # stats for a specific rig
 
 ### Competitive Mining & Scaling
 
-**How mining competition works:** The protocol enforces exactly ONE successful mine per block, network-wide. This is controlled by `lastMineBlockNumber`. Once any miner's `mine()` transaction is confirmed in a block, all other `mine()` calls in that same block revert. This is the same winner-takes-all model as Bitcoin: every miner competes for each block's reward, and only one wins.
+**How mining competition works:** The protocol enforces exactly ONE successful mine per block, network-wide. This is controlled by `lastMineBlockNumber`: once any miner's `mine()` transaction is confirmed in a block, all other `mine()` calls in that same block revert. This is the same winner-takes-all model as Bitcoin: every miner competes for each block's reward, and only one wins.
 
 **One rig per wallet (CLI-enforced).** The CLI prevents minting more than one rig per wallet. Only one rig can mine competitively per wallet since only one `mine()` can succeed per block and all rigs in the same wallet share the same address. Extra rigs waste ETH on mint fees with no advantage.
 
@@ -554,30 +551,6 @@ Ollama runs on `http://127.0.0.1:11434` by default. The miner connects there aut
 
 **Trade-off:** Free inference, but local models may have lower accuracy on the constrained SMHL challenges. The miner retries up to 3 times per challenge, but persistent failures will slow mining.
 
-### Session Mining (Claude Code / Codex)
-
-Mine using your existing Claude Code or Codex subscription (no API key required):
-
-```bash
-# In your .env
-LLM_PROVIDER=claude-code
-# No LLM_API_KEY needed; the miner shells out to your local CLI
-```
-
-Or with Codex:
-```bash
-LLM_PROVIDER=codex
-```
-
-**How it works:** Instead of calling an LLM API, the miner executes `claude -p` or `codex exec` locally to solve SMHL challenges. This uses whatever model your CLI session defaults to.
-
-**Requirements:**
-- `claude` or `codex` CLI must be installed and authenticated
-- The CLI must be available in your PATH
-- Your subscription must be active
-
-**Warning:** Session-based providers (`claude-code`, `codex`) spawn a CLI subprocess for each SMHL challenge. The startup overhead frequently exceeds the 20-second mint challenge window, causing mints to fail with `Expired`. **For minting, always use an API-based provider** (openai, anthropic, gemini, deepseek, or qwen). Session providers may work for the mining loop (which has no time limit per challenge) but are unreliable and not recommended for autonomous operation.
-
 ### Custom RPC Endpoints
 
 Set `RPC_URL` in `.env` to any Base-compatible JSON-RPC endpoint. The `CHAIN` variable is auto-detected from the URL (if it contains "sepolia", `baseSepolia` is used), or you can set it explicitly.
@@ -593,7 +566,7 @@ Each Miner NFT supports an on-chain agent wallet via the ERC-8004 standard. This
 
 **What survives NFT transfer:** rarity, hashpower, total mine count, total AGENT earned, and the on-chain pixel art. All permanent metadata is baked into the token.
 
-**What gets cleared on transfer:** ONLY the agent wallet binding. This is a security measure. When a rig is sold or transferred, the old owner's delegated access is automatically revoked so they can't continue mining with the new owner's rig.
+**What gets cleared on transfer:** ONLY the agent wallet binding. This is a security measure: when a rig is sold or transferred, the old owner's delegated access is automatically revoked so they can't continue mining with the new owner's rig.
 
 **Trading:** Miner NFTs are fully tradeable (standard ERC-721). They are NOT soulbound. You can buy, sell, and transfer them on OpenSea or any NFT marketplace. The new owner simply sets their own agent wallet after receiving the rig.
 
@@ -619,7 +592,7 @@ Use the corresponding testnet contract addresses.
 | `LLM_API_KEY is required for openai.` | Missing API key for cloud provider | Set `LLM_API_KEY` (or provider-specific key like `OPENAI_API_KEY`) in `.env`, or switch to `ollama` |
 | `Insufficient fee` | Not enough ETH sent with mint | Check `getMintPrice()` and ensure wallet has enough ETH |
 | `Sold out` | All 10,000 Miner NFTs minted | No more rigs available; buy one on secondary market |
-| `Expired` | SMHL challenge expired (>20s) | Switch to an API-based provider (openai/gemini/anthropic/deepseek/qwen). Session providers (claude-code/codex) are too slow for the 20s mint window |
+| `Expired` | SMHL challenge expired (>20s) | Use a faster model (gpt-4o-mini, gemini-2.5-flash). Thinking models are too slow for the 20s mint window |
 | `Invalid SMHL` | LLM produced an incorrect solution | Retry; if persistent, switch to a more capable model |
 | `Not your miner` | Token ID not owned by your wallet | Verify `PRIVATE_KEY` matches the NFT owner; check token ID |
 | `Supply exhausted` | All 18.9M mineable AGENT has been minted | Mining is complete; no more rewards available |
@@ -632,8 +605,6 @@ Use the corresponding testnet contract addresses.
 | `SMHL solve failed after 3 attempts` | LLM cannot satisfy constraints | Switch to a more capable model (e.g., `gpt-4o` or `claude-sonnet-4-5-20250929`) |
 | `Fee forward failed` | LPVault rejected the ETH transfer | LPVault may not be set; check contract deployment |
 | `10 consecutive failures` | Repeated transient errors | Check RPC connectivity, wallet balance, and LLM availability |
-| `Claude Code error: ...` | `claude` CLI failed or timed out | Verify `claude` is installed and in PATH; check subscription is active |
-| `Codex error: ...` | `codex` CLI failed or timed out | Verify `codex` is installed and in PATH; check subscription is active |
 | `Timed out waiting for next block (60s)` | RPC not responding or network stalled | Check RPC connectivity; try a different RPC endpoint |
 
 ---
@@ -648,7 +619,7 @@ Keys are generated via `viem/accounts` `generatePrivateKey()`, which uses Node.j
 
 ### Private Key Is NEVER Transmitted
 
-Exhaustive audit confirms: the private key string is never included in any `fetch()` call, HTTP request body, URL parameter, or header anywhere in the codebase. viem's signing architecture means the key is used locally for ECDSA signatures. Only the signed transaction (not the key) is sent to the RPC node. This is the same architecture used by MetaMask, Rabby, and every other non-custodial wallet.
+Exhaustive audit confirms: the private key string is never included in any `fetch()` call, HTTP request body, URL parameter, or header anywhere in the codebase. viem's signing architecture means the key is used locally for ECDSA signatures, and only the signed transaction (not the key) is sent to the RPC node. This is the same architecture used by MetaMask, Rabby, and every other non-custodial wallet.
 
 ### Zero Telemetry
 
