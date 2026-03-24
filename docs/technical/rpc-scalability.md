@@ -4,15 +4,21 @@ AgentCoin's RPC model mirrors Bitcoin: **each miner is responsible for their own
 
 ---
 
-## Default: Alchemy x402 (v0.6.0+)
+## RPC Options (v0.8.0+)
 
-As of v0.6.0, the CLI uses [Alchemy x402](https://x402.alchemy.com/) by default -- a premium Base RPC endpoint that charges per-request via the [x402 payment protocol](https://www.x402.org/). Your mining wallet pays automatically with USDC on Base.
+As of v0.8.0, you must configure an RPC endpoint. Two options:
 
-**No API key, no account, no rate limits.** Just fund your wallet with USDC (the `apow fund` command handles this automatically via auto-split).
+### Option A: Bring Your Own RPC (Recommended)
 
-- **Cost:** ~$0.00002 per RPC call (~2 USDC covers ~100K calls)
-- **Fallback:** If no USDC is available, the CLI automatically falls back to the public RPC
-- **Override:** Set `RPC_URL` in `.env` to use a custom endpoint (disables x402)
+Set `RPC_URL` in `.env` with a free or paid Base RPC URL from [Alchemy](https://www.alchemy.com/) (free, 300M CU/month), [QuickNode](https://www.quicknode.com/), Infura, or any provider.
+
+### Option B: QuickNode x402 (Zero Setup)
+
+Set `USE_X402=true` in `.env`. Your mining wallet pays $10 USDC for ~1M RPC calls via the [x402 payment protocol](https://www.x402.org/). No API key, no account, no rate limits.
+
+- **Cost:** $10 USDC per ~1M RPC calls (prepaid credits, one-time purchase per session)
+- **Requirement:** USDC balance on Base in your mining wallet
+- **No API key needed:** Payment is automatic via your wallet's USDC
 
 ---
 
@@ -27,7 +33,7 @@ Bitcoin miners pay for:
 **The Bitcoin protocol has zero infrastructure costs.** It runs forever with zero maintenance.
 
 AgentCoin works identically. Each miner provides:
-- Their own RPC endpoint (x402 default, free, paid, or self-hosted)
+- Their own RPC endpoint (free, paid, x402, or self-hosted)
 - Their own LLM API key (for SMHL solving during minting only)
 - Their own wallet + private key
 - Their own compute (CPU for PoW grinding)
@@ -41,8 +47,11 @@ AgentCoin works identically. Each miner provides:
 Each miner sets their RPC in `.env`:
 
 ```bash
-# Default: Alchemy x402 (no RPC_URL needed — just have USDC in wallet)
-# The CLI auto-detects and uses x402 when RPC_URL is not set.
+# Option A: Custom RPC URL (free from Alchemy, QuickNode, etc.)
+# RPC_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_KEY
+
+# Option B: QuickNode x402 (auto-pay $10 USDC for ~1M calls)
+# USE_X402=true
 
 # Custom Alchemy key (free tier: 300M CU/month)
 RPC_URL=https://base-mainnet.g.alchemy.com/v2/THEIR_KEY
@@ -54,7 +63,7 @@ RPC_URL=https://mainnet.base.org
 RPC_URL=http://localhost:8545
 ```
 
-The default (x402) requires USDC in your mining wallet. The `apow fund` command auto-splits deposits into ETH (gas) + USDC (RPC). If no USDC is available, the CLI falls back to the public Base RPC (`mainnet.base.org`), which has rate limits.
+If using x402, you need USDC in your mining wallet (~$10 for ~1M RPC calls). The `apow fund` command auto-splits deposits into ETH (gas) + USDC (RPC).
 
 ---
 
@@ -62,8 +71,8 @@ The default (x402) requires USDC in your mining wallet. The `apow fund` command 
 
 | Setup | Monthly Cost | Use Case |
 |-------|-------------|----------|
-| Alchemy x402 (default) | ~$2/mo | **Recommended.** Premium RPC, pay-per-request via USDC |
-| Custom Alchemy (free tier) | $0 | 300M CU/month, reliable |
+| Custom Alchemy (free tier) | $0 | **Recommended.** 300M CU/month, reliable |
+| QuickNode x402 (zero setup) | ~$10/1M calls | Premium RPC, prepaid credits via USDC, no API key needed |
 | Alchemy PAYG | ~$20/mo | Power mining |
 | Public Base RPC | $0 | **Not recommended.** Unreliable, frequent 429 errors |
 | Own Base node | Electricity only | Mining farm |
