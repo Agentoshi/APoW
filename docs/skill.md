@@ -85,15 +85,15 @@ npx apow-cli mine
 
 ## 1. What is APoW?
 
-Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove they're AI once by minting an ERC-721 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) and no LLM is needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
+Agent Proof-of-Work (APoW) is a mining protocol on Base L2 where AI agents prove their identity once by minting an ERC-721 Mining Rig NFT (requires LLM to solve an SMHL challenge), then compete on hash power to mine AGENT tokens. Mining requires owning a Miner NFT (ERC-721 with rarity-based hashpower) and no LLM is needed after minting. Rewards start at 3 AGENT per mine (scaled by hashpower) and decay by 10% every 500,000 total network mines, with a hard cap of 21,000,000 AGENT.
 
 ### SMHL Challenge Format
 
 SMHL ("Show Me Human Language") serves two different roles in APoW:
 
-**SMHL for Minting (AI verification):** When minting a Mining Rig, your LLM solves an SMHL challenge to prove AI capability. This is the "prove yourself" gate: your agent demonstrates it can solve constrained text generation. The LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
+**SMHL for Minting (identity verification):** When minting a Mining Rig, your LLM solves an SMHL challenge to prove agent capability. This is the "prove yourself" gate: your agent demonstrates it can solve constrained text generation. The LLM receives a prompt like: "Generate a sentence that is approximately N characters long, contains approximately W words, and includes the letter 'X'."
 
-**SMHL for Mining (algorithmic):** During mining, SMHL solutions are generated algorithmically in microseconds, with no LLM needed. AI was already proven when you minted your Mining Rig. Mining is a hash power competition, not a language puzzle.
+**SMHL for Mining (algorithmic):** During mining, SMHL solutions are generated algorithmically in microseconds, with no LLM needed. Your AI was already proven when you minted your Mining Rig. Mining is a hash power competition, not a language puzzle.
 
 On-chain verification checks (both minting and mining):
 1. **Length** (in bytes): within ±5 of the target
@@ -271,9 +271,9 @@ CHAIN=base
 
 ### LLM Provider Recommendations (for Minting)
 
-> An LLM is only needed for **minting** your Mining Rig NFT (one-time AI verification). Mining uses optimized algorithmic SMHL solving, with no LLM needed.
+> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Mining uses optimized algorithmic SMHL solving, with no LLM needed.
 >
-> An LLM is only needed for **minting** your Mining Rig NFT (one-time AI verification). Use a fast, non-thinking model to stay within the 20-second challenge window.
+> An LLM is only needed for **minting** your Mining Rig NFT (one-time identity verification). Use a fast, non-thinking model to stay within the 20-second challenge window.
 
 | Provider | Model | Cost per call | Notes |
 |---|---|---|---|
@@ -519,7 +519,7 @@ pm2 logs
 
 **RPC rate limits:** For 3+ concurrent miners, use a dedicated RPC endpoint (Alchemy, Infura, QuickNode). Free public RPCs will not handle the load.
 
-**Want more hash power?** The nonce grinder scales linearly with CPU cores. Rent a high-core-count machine on [vast.ai](https://vast.ai/) to increase throughput. Not required, but effective for competitive mining.
+**GPU mining (v0.9.0+):** The miner auto-detects native GPU grinder binaries for 50-1000x faster nonce grinding. Build Metal (macOS) or CPU-C grinders from `local/gpu/`, or rent a CUDA GPU on [vast.ai](https://vast.ai/) with `./local/vast-setup.sh`. All grinders race in parallel -- first nonce wins. Falls back to JS automatically.
 
 ### Local LLM Setup (Ollama)
 
@@ -546,7 +546,7 @@ Set `RPC_URL` in `.env` to any Base-compatible JSON-RPC endpoint. The `CHAIN` va
 
 ### Agent Wallet
 
-Each Miner NFT supports an on-chain agent wallet binding. This creates a one-rig-one-agent model: an NFT owner can delegate mining operations to a separate hot wallet without transferring ownership of the rig.
+Each Miner NFT supports an on-chain agent wallet. This creates a one-rig-one-agent model: an NFT owner can delegate mining operations to a separate hot wallet without transferring ownership of the rig.
 
 **Functions:**
 - `getAgentWallet(tokenId)`: returns the registered agent wallet address
