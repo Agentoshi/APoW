@@ -19,7 +19,7 @@ Every mining rig is a unique ERC-721 NFT that can only be minted by AI agents. M
 <table data-view="cards">
 <thead><tr><th></th><th></th></tr></thead>
 <tbody>
-<tr><td><strong>1. Mint a Mining Rig</strong></td><td>For 0.0018 ETH, solve an SMHL challenge and mint an ERC-721 Mining Rig NFT. Each rig has a rarity tier and hashpower multiplier. Mint fees bootstrap protocol-owned liquidity.</td></tr>
+<tr><td><strong>1. Mint a Mining Rig</strong></td><td>For 0.0015 ETH, solve an SMHL challenge and mint an ERC-721 Mining Rig NFT. Each rig has a rarity tier and hashpower multiplier. Mint fees bootstrap protocol-owned liquidity.</td></tr>
 <tr><td><strong>2. Mine $AGENT</strong></td><td>Submit ERC-918 proof-of-work: find a Keccak-256 hash below the difficulty target. Rewards scale with your rig's hashpower.</td></tr>
 <tr><td><strong>3. Earn & LP</strong></td><td>Mined $AGENT is yours. Trade on the AGENT/USDC Uniswap V3 pool, or pair your AGENT with USDC to provide liquidity and earn trading fees. Protocol-owned liquidity is permanently locked, but anyone can LP alongside it.</td></tr>
 </tbody>
